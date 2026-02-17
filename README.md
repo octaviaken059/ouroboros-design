@@ -96,8 +96,36 @@ npm start -- web --port 3000
 open http://localhost:8080
 ```
 
+### 3. 监控面板
+
+```bash
+# 启动监控服务器
+npx ts-node src/adapters/monitor-example.ts
+
+# 或编程方式启动
+import { MonitorServer } from './src/adapters/monitor-server.js';
+
+const monitor = new MonitorServer(agent, 3000);
+monitor.start();
+```
+
+**监控面板功能:**
+- 📊 实时系统状态（运行时间、任务数、成功率）
+- 🧪 激素水平可视化（肾上腺素、多巴胺、皮质醇等）
+- 🛠️ 工具/技能状态（置信度、可用性）
+- 🌍 世界模型（识别模式、风险评估）
+- 📈 性能趋势图表
+- 📜 实时日志流
+
 **Web API 端点:**
 - `GET /api/health` - 健康检查
+- `GET /api/status` - 完整系统状态
+- `GET /api/hormones` - 激素水平
+- `GET /api/tools` - 工具列表
+- `GET /api/skills` - 技能列表
+- `GET /api/resources` - 资源使用
+- `GET /api/logs` - 最近日志
+- `POST /api/reflect` - 触发反思
 - `GET /api/status` - 系统状态
 - `GET /api/body` - 身体图式
 - `GET /api/hormones` - 激素水平
