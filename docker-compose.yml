@@ -1,0 +1,234 @@
+# Ouroboros - Docker Compose 配置
+# 🐍⭕ "The Eternal Serpent Devours Itself to Be Reborn"
+#
+# 使用方法:
+#   docker-compose up -d              # 启动生产环境
+#   docker-compose --profile dev up   # 启动开发环境
+#   docker-compose --profile test up  # 运行测试
+
+version: '3.8'
+
+# ============================================================================
+# 通用配置
+# ============================================================================
+x-common-variables: &common-variables
+  NODE_ENV: production
+  OURO_LOG_LEVEL: info
+
+x-common-healthcheck: &common-healthcheck
+  test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 10s
+
+# ============================================================================
+# 服务定义
+# ============================================================================
+services:
+  # --------------------------------------------------------------------------
+  # 主服务 - Web 模式
+  # --------------------------------------------------------------------------
+  ouroboros:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ouroboros:latest
+    container_name: ouroboros
+    restart: unless-stopped
+    ports:
+      - "${OURO_PORT:-8080}:8080"
+    environment:
+      <<: *common-variables
+      OURO_MODE: web
+      OURO_HOST: 0.0.0.0
+      OURO_DATA_DIR: /app/data
+      OURO_HOMEOSTASIS: "${OURO_HOMEOSTASIS:-true}"
+      OURO_CPU_THRESHOLD: "${OURO_CPU_THRESHOLD:-80}"
+      OURO_MEMORY_THRESHOLD: "${OURO_MEMORY_THRESHOLD:-85}"
+      OURO_REFLECTION: "${OURO_REFLECTION:-true}"
+      OURO_REFLECTION_INTERVAL: "${OURO_REFLECTION_INTERVAL:-30}"
+      OURO_MAX_MEMORY: "${OURO_MAX_MEMORY:-10000}"
+      OURO_ENABLE_VECTORIZATION: "${OURO_ENABLE_VECTORIZATION:-false}"
+      # 可选: OpenAI API
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+    volumes:
+      - ouroboros-data:/app/data
+      - ouroboros-logs:/app/logs
+    healthcheck:
+      <<: *common-healthcheck
+    networks:
+      - ouroboros-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    labels:
+      - "app.name=ouroboros"
+      - "app.version=1.0.0"
+      - "app.description=Embodied Self-Referential Evolving AI Agent"
+
+  # --------------------------------------------------------------------------
+  # TUI 模式服务
+  # --------------------------------------------------------------------------
+  ouroboros-tui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ouroboros:latest
+    container_name: ouroboros-tui
+    profiles:
+      - tui
+    stdin_open: true
+    tty: true
+    environment:
+      <<: *common-variables
+      OURO_MODE: tui
+      OURO_DATA_DIR: /app/data
+    volumes:
+      - ouroboros-data:/app/data
+    networks:
+      - ouroboros-network
+    command: ["node", "dist/agent.js", "tui"]
+
+  # --------------------------------------------------------------------------
+  # 开发环境服务
+  # --------------------------------------------------------------------------
+  ouroboros-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    image: ouroboros:dev
+    container_name: ouroboros-dev
+    profiles:
+      - dev
+    ports:
+      - "${OURO_DEV_PORT:-8081}:8080"
+    environment:
+      NODE_ENV: development
+      OURO_MODE: web
+      OURO_HOST: 0.0.0.0
+      OURO_LOG_LEVEL: debug
+      OURO_DATA_DIR: /app/data
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ouroboros-data-dev:/app/data
+    networks:
+      - ouroboros-network
+    command: ["npm", "run", "dev"]
+
+  # --------------------------------------------------------------------------
+  # 快速测试服务
+  # --------------------------------------------------------------------------
+  ouroboros-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ouroboros:latest
+    container_name: ouroboros-test
+    profiles:
+      - test
+    environment:
+      NODE_ENV: test
+      OURO_MODE: cli
+      OURO_LOG_LEVEL: debug
+    networks:
+      - ouroboros-network
+    command: ["node", "dist/agent.js", "cli", "status"]
+
+  # --------------------------------------------------------------------------
+  # 监控 - Prometheus (可选)
+  # --------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ouroboros-prometheus
+    profiles:
+      - monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - ouroboros-network
+
+  # --------------------------------------------------------------------------
+  # 监控 - Grafana (可选)
+  # --------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ouroboros-grafana
+    profiles:
+      - monitoring
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - ouroboros-network
+
+  # --------------------------------------------------------------------------
+  # 向量数据库 - Qdrant (可选, 用于向量化记忆)
+  # --------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ouroboros-qdrant
+    profiles:
+      - vector
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - ouroboros-network
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__SERVICE__GRPC_PORT: 6334
+
+# ============================================================================
+# 数据卷
+# ============================================================================
+volumes:
+  ouroboros-data:
+    driver: local
+  ouroboros-data-dev:
+    driver: local
+  ouroboros-logs:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  qdrant-data:
+    driver: local
+
+# ============================================================================
+# 网络
+# ============================================================================
+networks:
+  ouroboros-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

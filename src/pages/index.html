@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ouroboros - 具身自指进化AI Agent</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">🐍⭕</span>
+          <span class="logo-text">Ouroboros</span>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-item active" data-page="dashboard">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+          </svg>
+          <span>仪表盘</span>
+        </a>
+        <a href="#terminal" class="nav-item" data-page="terminal">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM7.5 15l4.5-4.5L7.5 6l1-1 5.5 5.5-5.5 5.5-1-1z"/>
+          </svg>
+          <span>终端</span>
+        </a>
+        <a href="#memory" class="nav-item" data-page="memory">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+          <span>记忆</span>
+        </a>
+        <a href="#hormones" class="nav-item" data-page="hormones">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <span>激素系统</span>
+        </a>
+        <a href="#settings" class="nav-item" data-page="settings">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.16 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+          <span>设置</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="connection-status" id="connectionStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">连接中...</span>
+        </div>
+        <div class="version">v1.0.0</div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 顶部栏 -->
+      <header class="header">
+        <h1 class="page-title" id="pageTitle">仪表盘</h1>
+        <div class="header-actions">
+          <button class="btn btn-icon" id="refreshBtn" title="刷新">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+          </button>
+          <button class="btn btn-icon" id="notificationBtn" title="通知">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+            </svg>
+            <span class="badge" id="notificationBadge">0</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 页面内容 -->
+      <div class="page-content">
+        <!-- 仪表盘页面 -->
+        <div class="page active" id="page-dashboard">
+          <div class="dashboard-grid">
+            <!-- 状态卡片 -->
+            <div class="card status-card">
+              <div class="card-header">
+                <h3>系统状态</h3>
+                <span class="badge badge-success" id="healthBadge">健康</span>
+              </div>
+              <div class="card-body">
+                <div class="status-grid">
+                  <div class="status-item">
+                    <span class="status-label">运行时间</span>
+                    <span class="status-value" id="uptimeValue">-</span>
+                  </div>
+                  <div class="status-item">
+                    <span class="status-label">进程ID</span>
+                    <span class="status-value" id="pidValue">-</span>
+                  </div>
+                  <div class="status-item">
+                    <span class="status-label">版本</span>
+                    <span class="status-value" id="versionValue">-</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 资源使用 -->
+            <div class="card resource-card">
+              <div class="card-header">
+                <h3>资源使用</h3>
+              </div>
+              <div class="card-body">
+                <div class="resource-item">
+                  <div class="resource-info">
+                    <span class="resource-name">内存</span>
+                    <span class="resource-value" id="memoryValue">- / -</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" id="memoryProgress" style="width: 0%"></div>
+                  </div>
+                </div>
+                <div class="resource-item">
+                  <div class="resource-info">
+                    <span class="resource-name">CPU</span>
+                    <span class="resource-value" id="cpuValue">-</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" id="cpuProgress" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 任务统计 -->
+            <div class="card tasks-card">
+              <div class="card-header">
+                <h3>任务统计</h3>
+              </div>
+              <div class="card-body">
+                <div class="stats-grid">
+                  <div class="stat-item">
+                    <span class="stat-value" id="pendingTasks">0</span>
+                    <span class="stat-label">待处理</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-value" id="runningTasks">0</span>
+                    <span class="stat-label">运行中</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-value" id="completedTasks">0</span>
+                    <span class="stat-label">已完成</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-value" id="failedTasks">0</span>
+                    <span class="stat-label">失败</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 激素水平 -->
+            <div class="card hormones-card">
+              <div class="card-header">
+                <h3>激素水平</h3>
+              </div>
+              <div class="card-body">
+                <div class="hormone-list" id="hormoneList">
+                  <div class="hormone-item">
+                    <span class="hormone-name">肾上腺素</span>
+                    <div class="hormone-bar">
+                      <div class="hormone-fill" style="width: 0%"></div>
+                    </div>
+                    <span class="hormone-value">0%</span>
+                  </div>
+                  <div class="hormone-item">
+                    <span class="hormone-name">皮质醇</span>
+                    <div class="hormone-bar">
+                      <div class="hormone-fill" style="width: 0%"></div>
+                    </div>
+                    <span class="hormone-value">0%</span>
+                  </div>
+                  <div class="hormone-item">
+                    <span class="hormone-name">多巴胺</span>
+                    <div class="hormone-bar">
+                      <div class="hormone-fill" style="width: 0%"></div>
+                    </div>
+                    <span class="hormone-value">0%</span>
+                  </div>
+                  <div class="hormone-item">
+                    <span class="hormone-name">血清素</span>
+                    <div class="hormone-bar">
+                      <div class="hormone-fill" style="width: 0%"></div>
+                    </div>
+                    <span class="hormone-value">0%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 日志预览 -->
+            <div class="card logs-card">
+              <div class="card-header">
+                <h3>实时日志</h3>
+                <button class="btn btn-sm" id="clearLogs">清空</button>
+              </div>
+              <div class="card-body">
+                <div class="logs-container" id="logsContainer">
+                  <div class="log-entry log-info">
+                    <span class="log-time">--:--:--</span>
+                    <span class="log-level">INFO</span>
+                    <span class="log-message">系统初始化完成</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 终端页面 -->
+        <div class="page" id="page-terminal">
+          <div class="terminal-container">
+            <div class="terminal-output" id="terminalOutput"></div>
+            <div class="terminal-input-wrapper">
+              <span class="terminal-prompt">ouro></span>
+              <input 
+                type="text" 
+                class="terminal-input" 
+                id="terminalInput" 
+                placeholder="输入命令..."
+                autocomplete="off"
+                spellcheck="false"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- 记忆页面 -->
+        <div class="page" id="page-memory">
+          <div class="memory-container">
+            <div class="memory-filters">
+              <input type="text" class="search-input" id="memorySearch" placeholder="搜索记忆...">
+              <select class="filter-select" id="memoryType">
+                <option value="">全部类型</option>
+                <option value="working">工作记忆</option>
+                <option value="episodic">情景记忆</option>
+                <option value="semantic">语义记忆</option>
+                <option value="procedural">程序记忆</option>
+                <option value="reflective">反思记忆</option>
+              </select>
+            </div>
+            <div class="memory-list" id="memoryList">
+              <div class="empty-state">
+                <span class="empty-icon">🧠</span>
+                <p>暂无记忆数据</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 激素系统页面 -->
+        <div class="page" id="page-hormones">
+          <div class="hormones-container">
+            <div class="hormones-grid" id="hormonesDetail">
+              <!-- 动态生成 --
+              <div class="card hormone-detail-card">
+                <div class="card-header">
+                  <h3>肾上腺素 (Adrenaline)</h3>
+                  <span class="hormone-badge high">高</span>
+                </div>
+                <div class="card-body">
+                  <div class="hormone-chart">
+                    <canvas id="adrenalineChart"></canvas>
+                  </div>
+                  <div class="hormone-info">
+                    <p><strong>作用：</strong>提升专注，应对紧急情况</p>
+                    <p><strong>触发条件：</strong>错误/异常</p>
+                    <p><strong>当前水平：</strong>0.85</p>
+                  </div>
+                </div>
+              </div>
+              -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 设置页面 -->
+        <div class="page" id="page-settings">
+          <div class="settings-container">
+            <div class="settings-section">
+              <h3>连接设置</h3>
+              <div class="form-group">
+                <label>WebSocket URL</label>
+                <input type="text" id="wsUrl" value="ws://localhost:8080/ws">
+              </div>
+              <div class="form-group">
+                <label>API URL</label>
+                <input type="text" id="apiUrl" value="http://localhost:8080/api">
+              </div>
+              <button class="btn btn-primary" id="saveConnection">保存</button>
+            </div>
+
+            <div class="settings-section">
+              <h3>显示设置</h3>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="darkMode" checked>
+                  <span>深色模式</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="showTimestamps" checked>
+                  <span>显示时间戳</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="autoScroll" checked>
+                  <span>自动滚动</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h3>关于</h3>
+              <div class="about-info">
+                <p><strong>Ouroboros</strong> - 具身自指进化AI Agent</p>
+                <p>版本: 1.0.0</p>
+                <p>🐍⭕ 衔尾蛇 - 自我指涉的终极象征</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 通知面板 -->
+    <div class="notification-panel" id="notificationPanel">
+      <div class="notification-header">
+        <h3>通知</h3>
+        <button class="btn btn-sm" id="clearNotifications">清空</button>
+      </div>
+      <div class="notification-list" id="notificationList">
+        <div class="notification-empty">暂无通知</div>
+      </div>
+    </div>
+
+    <!-- Toast容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

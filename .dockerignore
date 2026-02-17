@@ -1,0 +1,80 @@
+# ============================================================================
+# Docker 忽略文件
+# 🐍⭕ "The Eternal Serpent Devours Itself to Be Reborn"
+# ============================================================================
+
+# 依赖
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 构建输出
+dist
+build
+*.tsbuildinfo
+
+# 数据 (由 volume 挂载)
+data
+*.db
+*.sqlite
+memories.json
+
+# 日志
+logs
+*.log
+
+# 测试
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+tests
+test
+
+# 文档
+docs
+*.md
+!README.md
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 环境配置 (安全原因)
+.env
+.env.local
+.env.*.local
+.env.example
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker 相关 (自身)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# 监控配置 (可选)
+monitoring
+
+# 临时文件
+tmp
+temp
+*.tmp
+.cache
+
+# 其他
+*.tgz
+*.tar.gz
