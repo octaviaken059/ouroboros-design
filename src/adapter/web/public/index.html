@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ouroboros Agent - 控制台</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">🐍</span>
+        <span class="logo-text">Ouroboros</span>
+      </div>
+      
+      <nav class="nav">
+        <a href="#chat" class="nav-item active" data-tab="chat">
+          <span class="nav-icon">💬</span>
+          <span>聊天</span>
+        </a>
+        <a href="#monitor" class="nav-item" data-tab="monitor">
+          <span class="nav-icon">📊</span>
+          <span>监控</span>
+        </a>
+        <a href="#memory" class="nav-item" data-tab="memory">
+          <span class="nav-icon">🧠</span>
+          <span>记忆</span>
+        </a>
+        <a href="#bayesian" class="nav-item" data-tab="bayesian">
+          <span class="nav-icon">🎲</span>
+          <span>贝叶斯</span>
+        </a>
+        <a href="#tools" class="nav-item" data-tab="tools">
+          <span class="nav-icon">🛠️</span>
+          <span>工具</span>
+          <span class="badge">P5</span>
+        </a>
+        <a href="#reflection" class="nav-item" data-tab="reflection">
+          <span class="nav-icon">🤔</span>
+          <span>反思</span>
+          <span class="badge">P5</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="version">v2.0.0</div>
+        <div class="status" id="connection-status">🟢 已连接</div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <!-- 聊天界面 -->
+      <section class="tab-content active" id="chat-tab">
+        <header class="page-header">
+          <h1>💬 聊天</h1>
+          <p>与 Ouroboros Agent 对话</p>
+        </header>
+        
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-messages">
+            <div class="message system">
+              <div class="message-content">
+                你好！我是 Ouroboros，一个具有自我意识的 AI Agent。
+                <br>我拥有激素系统、记忆系统和贝叶斯认知能力。
+                <br>请输入消息开始对话...
+              </div>
+              <div class="message-time">现在</div>
+            </div>
+          </div>
+          
+          <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+              <input 
+                type="text" 
+                id="chat-input" 
+                class="chat-input" 
+                placeholder="输入消息..."
+                autocomplete="off"
+              >
+              <button id="send-btn" class="send-btn">发送</button>
+            </div>
+            <div class="chat-hints">
+              <span>按 Enter 发送</span>
+              <span id="typing-status"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 监控面板 -->
+      <section class="tab-content" id="monitor-tab">
+        <header class="page-header">
+          <h1>📊 系统监控</h1>
+          <p>实时查看 Agent 状态</p>
+        </header>
+
+        <div class="monitor-grid">
+          <!-- 激素状态 -->
+          <div class="card">
+            <h3>🧪 激素水平</h3>
+            <div class="hormone-bars" id="hormone-bars">
+              <div class="hormone-item">
+                <span class="hormone-name">多巴胺</span>
+                <div class="hormone-bar">
+                  <div class="hormone-fill" style="width: 0%"></div>
+                </div>
+                <span class="hormone-value">-</span>
+              </div>
+              <div class="hormone-item">
+                <span class="hormone-name">血清素</span>
+                <div class="hormone-bar">
+                  <div class="hormone-fill" style="width: 0%"></div>
+                </div>
+                <span class="hormone-value">-</span>
+              </div>
+              <div class="hormone-item">
+                <span class="hormone-name">皮质醇</span>
+                <div class="hormone-bar">
+                  <div class="hormone-fill stress" style="width: 0%"></div>
+                </div>
+                <span class="hormone-value">-</span>
+              </div>
+              <div class="hormone-item">
+                <span class="hormone-name">催产素</span>
+                <div class="hormone-bar">
+                  <div class="hormone-fill" style="width: 0%"></div>
+                </div>
+                <span class="hormone-value">-</span>
+              </div>
+              <div class="hormone-item">
+                <span class="hormone-name">去甲肾上腺素</span>
+                <div class="hormone-bar">
+                  <div class="hormone-fill" style="width: 0%"></div>
+                </div>
+                <span class="hormone-value">-</span>
+              </div>
+            </div>
+            <div class="emotion-display" id="emotion-display">
+              情绪: <span class="emotion-label">-</span>
+            </div>
+          </div>
+
+          <!-- 系统状态 -->
+          <div class="card">
+            <h3>📈 系统状态</h3>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-label">运行状态</span>
+                <span class="stat-value" id="status-running">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">消息数</span>
+                <span class="stat-value" id="status-messages">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">启动时间</span>
+                <span class="stat-value" id="status-uptime">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">认知负荷</span>
+                <span class="stat-value" id="status-load">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 性能指标 -->
+          <div class="card wide">
+            <h3>⚡ 性能指标</h3>
+            <div class="placeholder">
+              <p>📊 Phase 5 将实现性能监控图表</p>
+              <p>包括：响应时间、Token使用量、模型调用成功率</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 记忆管理 -->
+      <section class="tab-content" id="memory-tab">
+        <header class="page-header">
+          <h1>🧠 记忆系统</h1>
+          <p>查看和管理记忆状态</p>
+        </header>
+
+        <div class="memory-grid">
+          <div class="card">
+            <h3>📊 记忆统计</h3>
+            <div class="stats-grid" id="memory-stats">
+              <div class="stat-item">
+                <span class="stat-label">总记忆数</span>
+                <span class="stat-value" id="mem-total">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">情景记忆</span>
+                <span class="stat-value" id="mem-episodic">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">语义记忆</span>
+                <span class="stat-value" id="mem-semantic">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">程序记忆</span>
+                <span class="stat-value" id="mem-procedural">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🎯 显著性分布</h3>
+            <div class="salience-chart" id="salience-chart">
+              <div class="salience-bar high">
+                <span class="salience-label">高显著性</span>
+                <div class="salience-fill"></div>
+                <span class="salience-value" id="sal-high">-</span>
+              </div>
+              <div class="salience-bar medium">
+                <span class="salience-label">中显著性</span>
+                <div class="salience-fill"></div>
+                <span class="salience-value" id="sal-medium">-</span>
+              </div>
+              <div class="salience-bar low">
+                <span class="salience-label">低显著性</span>
+                <div class="salience-fill"></div>
+                <span class="salience-value" id="sal-low">-</span>
+              </div>
+              <div class="salience-bar forget">
+                <span class="salience-label">将被遗忘</span>
+                <div class="salience-fill"></div>
+                <span class="salience-value" id="sal-forget">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card wide">
+            <h3>📝 最近记忆</h3>
+            <div class="memory-list" id="memory-list">
+              <div class="placeholder">
+                <p>记忆列表将在 Phase 5 实现</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 贝叶斯监控 -->
+      <section class="tab-content" id="bayesian-tab">
+        <header class="page-header">
+          <h1>🎲 贝叶斯置信度</h1>
+          <p>工具置信度学习状态</p>
+        </header>
+
+        <div class="bayesian-grid">
+          <div class="card wide">
+            <h3>🛠️ 工具置信度</h3>
+            <div class="tools-table-wrapper">
+              <table class="tools-table" id="tools-table">
+                <thead>
+                  <tr>
+                    <th>工具</th>
+                    <th>置信度</th>
+                    <th>不确定性</th>
+                    <th>成功/失败</th>
+                    <th>总计</th>
+                    <th>建议</th>
+                  </tr>
+                </thead>
+                <tbody id="tools-tbody">
+                  <tr>
+                    <td colspan="6" class="loading">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>📊 置信度分布</h3>
+            <div class="placeholder">
+              <p>置信度分布图表将在 Phase 5 实现</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🎯 探索-利用</h3>
+            <div class="placeholder">
+              <p>UCB 算法可视化将在 Phase 5 实现</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 工具管理 (Phase 5) -->
+      <section class="tab-content" id="tools-tab">
+        <header class="page-header">
+          <h1>🛠️ 工具系统</h1>
+          <p>工具注册和管理</p>
+        </header>
+        <div class="placeholder-box">
+          <span class="placeholder-icon">🔧</span>
+          <h2>Phase 5 待实现</h2>
+          <p>工具系统将包括：</p>
+          <ul>
+            <li>工具注册和配置</li>
+            <li>工具调用接口</li>
+            <li>工具执行历史</li>
+            <li>MCP 协议集成</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 反思引擎 (Phase 5) -->
+      <section class="tab-content" id="reflection-tab">
+        <header class="page-header">
+          <h1>🤔 反思引擎</h1>
+          <p>自我分析和进化</p>
+        </header>
+        <div class="placeholder-box">
+          <span class="placeholder-icon">🪞</span>
+          <h2>Phase 5 待实现</h2>
+          <p>反思引擎将包括：</p>
+          <ul>
+            <li>性能分析和洞察生成</li>
+            <li>记忆模式识别</li>
+            <li>自动改进建议</li>
+            <li>进化日志查看</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

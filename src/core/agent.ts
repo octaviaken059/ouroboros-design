@@ -25,6 +25,7 @@ import { loadConfig, getConfig, type OuroborosConfig } from '@/config';
 import { initDatabase, saveAgentState, loadAgentState } from '@/db';
 import { createContextLogger } from '@/utils/logger';
 import { OuroborosError } from '@/utils/error';
+import { WebServer } from '@/adapter/web/server';
 
 const logger = createContextLogger('OuroborosAgent');
 
@@ -100,6 +101,11 @@ export class OuroborosAgent {
   private startTime: string = '';
   private triggerCheckInterval?: NodeJS.Timeout | undefined;
   private enablePersistence = true;
+  private _ebbinghausIntervals: NodeJS.Timeout[] = [];
+  
+  // Web 服务器
+  private webServer?: WebServer | undefined;
+  private webEnabled = true;
 
   /**
    * 创建 Agent 实例（工厂方法）
@@ -296,10 +302,7 @@ export class OuroborosAgent {
     }, 2 * 60 * 60 * 1000); // 2小时
 
     // 保存定时器引用以便清理
-    (this as unknown as { _ebbinghausIntervals: NodeJS.Timeout[] })._ebbinghausIntervals = [
-      consolidationInterval,
-      pruningInterval,
-    ];
+    this._ebbinghausIntervals = [consolidationInterval, pruningInterval];
 
     logger.info('艾宾浩斯遗忘调度已启动');
   }
@@ -308,11 +311,9 @@ export class OuroborosAgent {
    * 停止艾宾浩斯遗忘调度
    */
   private stopEbbinghausScheduler(): void {
-    const intervals = (this as unknown as { _ebbinghausIntervals?: NodeJS.Timeout[] })._ebbinghausIntervals;
-    if (intervals) {
-      intervals.forEach(clearInterval);
-      logger.info('艾宾浩斯遗忘调度已停止');
-    }
+    this._ebbinghausIntervals.forEach(clearInterval);
+    this._ebbinghausIntervals = [];
+    logger.info('艾宾浩斯遗忘调度已停止');
   }
 
   /**
@@ -332,6 +333,16 @@ export class OuroborosAgent {
     
     // 启动艾宾浩斯遗忘调度
     this.startEbbinghausScheduler();
+    
+    // 启动 Web 服务器
+    if (this.webEnabled) {
+      this.webServer = new WebServer({
+        port: this.config.adapter?.web?.port || 8080,
+        host: this.config.adapter?.web?.host || '0.0.0.0',
+        agent: this,
+      });
+      this.webServer.start();
+    }
     
     // 启动触发器检查循环
     this.triggerCheckInterval = setInterval(() => {
@@ -358,6 +369,12 @@ export class OuroborosAgent {
     
     // 停止艾宾浩斯遗忘调度
     this.stopEbbinghausScheduler();
+    
+    // 停止 Web 服务器
+    if (this.webServer) {
+      this.webServer.stop();
+      this.webServer = undefined;
+    }
     
     if (this.triggerCheckInterval) {
       clearInterval(this.triggerCheckInterval);
