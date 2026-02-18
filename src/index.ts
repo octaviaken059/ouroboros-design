@@ -81,9 +81,9 @@ export const VERSION = '2.0.0';
  * console.log(response.content);
  * ```
  */
-export async function createAgent(configPath?: string) {
-  const { OuroborosAgent } = await import('./core/agent.js');
-  const agent = new OuroborosAgent(configPath ? { configPath } : {});
-  await agent.start();
+export function createAgent(configPath?: string) {
+  const { OuroborosAgent } = require('./core/agent.js');
+  const agent = OuroborosAgent.create(configPath ? { configPath } : {});
+  agent.start();
   return agent;
 }

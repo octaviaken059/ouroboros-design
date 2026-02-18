@@ -1,27 +1,31 @@
 /**
  * @file config/loader.ts
- * @description 配置加载器 - 从 JSON 文件加载配置
+ * @description 配置加载器 - 支持文件和数据库，热重载
  * @author Ouroboros
  * @date 2026-02-18
  */
 
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync, watch, FSWatcher } from 'fs';
 import { dirname, join } from 'path';
 import type { OuroborosConfig } from './types';
 import { DEFAULT_CONFIG } from './defaults';
 import { createContextLogger } from '@/utils/logger';
 import { ConfigError } from '@/utils/error';
+import { loadConfigFromDb, saveConfigToDb } from '@/db/persistence';
 
 const logger = createContextLogger('ConfigLoader');
 
 /** 单例配置实例 */
 let configInstance: OuroborosConfig | null = null;
 
+/** 文件监听器 */
+let configWatcher: FSWatcher | null = null;
+
+/** 热重载回调列表 */
+const reloadCallbacks: Array<(config: OuroborosConfig) => void> = [];
+
 /**
  * 深度合并配置对象
- * @param target 目标配置
- * @param source 源配置（用户配置）
- * @returns 合并后的配置
  */
 function mergeConfig(
   target: OuroborosConfig,
@@ -70,35 +74,16 @@ function mergeConfig(
 
 /**
  * 验证配置
- * @param config 配置对象
- * @throws ConfigError 验证失败时抛出
  */
 function validateConfig(config: OuroborosConfig): void {
-  // 验证核心配置
   if (config.core.cognitiveDecayRate < 0 || config.core.cognitiveDecayRate > 1) {
     throw new ConfigError('cognitiveDecayRate 必须在 0-1 之间', 'ConfigLoader.validateConfig');
   }
 
-  // 验证激素配置
-  for (const hormone of Object.keys(config.hormone.baselineLevels)) {
-    const base = config.hormone.baselineLevels[hormone as keyof typeof config.hormone.baselineLevels];
-    const max = config.hormone.maxLevels[hormone as keyof typeof config.hormone.maxLevels];
-    const min = config.hormone.minLevels[hormone as keyof typeof config.hormone.minLevels];
-
-    if (base < min || base > max) {
-      throw new ConfigError(
-        `激素 ${hormone} 的基础水平 ${base} 超出范围 [${min}, ${max}]`,
-        'ConfigLoader.validateConfig'
-      );
-    }
-  }
-
-  // 验证模型配置
   if (config.model.totalTokenBudget <= 0) {
     throw new ConfigError('totalTokenBudget 必须大于 0', 'ConfigLoader.validateConfig');
   }
 
-  // 验证 Token 预算比例
   const budgetSum = Object.values(config.model.tokenBudget).reduce((a, b) => a + b, 0);
   if (Math.abs(budgetSum - 1) > 0.001) {
     throw new ConfigError(
@@ -111,94 +96,169 @@ function validateConfig(config: OuroborosConfig): void {
 }
 
 /**
- * 加载配置
+ * 从文件加载配置
+ */
+function loadFromFile(configPath: string): OuroborosConfig | null {
+  if (!existsSync(configPath)) {
+    return null;
+  }
+
+  const content = readFileSync(configPath, 'utf-8');
+  const userConfig = JSON.parse(content) as Partial<OuroborosConfig>;
+  return mergeConfig(DEFAULT_CONFIG, userConfig);
+}
+
+/**
+ * 加载配置（优先从数据库，其次文件）
  * @param configPath 配置文件路径
+ * @param useDb 是否使用数据库
  * @returns 配置对象
  */
-export function loadConfig(configPath?: string): OuroborosConfig {
-  try {
-    const path = configPath ?? join(process.cwd(), 'config.json');
+export function loadConfig(
+  configPath?: string,
+  useDb = true
+): OuroborosConfig {
+  const path = configPath ?? join(process.cwd(), 'config.json');
 
-    // 如果配置文件不存在，创建默认配置
-    if (!existsSync(path)) {
-      logger.info('配置文件不存在，创建默认配置', { path });
-      saveConfig(DEFAULT_CONFIG, path);
-      return DEFAULT_CONFIG;
+  // 1. 尝试从数据库加载
+  if (useDb) {
+    const dbConfig = loadConfigFromDb();
+    if (dbConfig) {
+      validateConfig(dbConfig);
+      configInstance = dbConfig;
+      logger.info('配置已从数据库加载');
+      return dbConfig;
+    }
+  }
+
+  // 2. 从文件加载
+  const fileConfig = loadFromFile(path);
+  if (fileConfig) {
+    validateConfig(fileConfig);
+    configInstance = fileConfig;
+
+    // 保存到数据库
+    if (useDb) {
+      saveConfigToDb(fileConfig);
     }
 
-    // 读取并解析配置
-    const content = readFileSync(path, 'utf-8');
-    const userConfig = JSON.parse(content) as Partial<OuroborosConfig>;
+    logger.info('配置已从文件加载', { path });
+    return fileConfig;
+  }
 
-    // 合并用户配置和默认配置
-    const mergedConfig = mergeConfig(DEFAULT_CONFIG, userConfig);
+  // 3. 使用默认配置并创建文件
+  logger.info('配置文件不存在，创建默认配置', { path });
+  const config = DEFAULT_CONFIG;
+  saveConfig(config, path, useDb);
+  configInstance = config;
+  return config;
+}
 
-    // 验证配置
-    validateConfig(mergedConfig);
+/**
+ * 保存配置到文件和数据库
+ */
+export function saveConfig(
+  config: OuroborosConfig,
+  configPath?: string,
+  saveToDb = true
+): void {
+  const path = configPath ?? join(process.cwd(), 'config.json');
 
-    logger.info('配置加载成功', { path });
+  // 保存到文件
+  const dir = dirname(path);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+  writeFileSync(path, JSON.stringify(config, null, 2), 'utf-8');
 
-    return mergedConfig;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new ConfigError(`加载配置失败: ${message}`, 'ConfigLoader.loadConfig');
+  // 保存到数据库
+  if (saveToDb) {
+    saveConfigToDb(config);
+  }
+
+  logger.info('配置已保存', { path });
+}
+
+/**
+ * 启用配置热重载
+ * @param configPath 配置文件路径
+ * @param onReload 重载回调
+ */
+export function enableHotReload(
+  configPath?: string,
+  onReload?: (config: OuroborosConfig) => void
+): void {
+  const path = configPath ?? join(process.cwd(), 'config.json');
+
+  if (configWatcher) {
+    configWatcher.close();
+  }
+
+  configWatcher = watch(path, (eventType) => {
+    if (eventType === 'change') {
+      try {
+        logger.info('检测到配置文件变化，正在重载...');
+        const newConfig = loadConfig(path, true);
+
+        // 调用所有回调
+        reloadCallbacks.forEach((cb) => cb(newConfig));
+        onReload?.(newConfig);
+
+        logger.info('配置热重载完成');
+      } catch (error) {
+        logger.error('配置热重载失败', { error });
+      }
+    }
+  });
+
+  logger.info('配置热重载已启用', { path });
+}
+
+/**
+ * 禁用配置热重载
+ */
+export function disableHotReload(): void {
+  if (configWatcher) {
+    configWatcher.close();
+    configWatcher = null;
+    logger.info('配置热重载已禁用');
   }
 }
 
 /**
- * 保存配置到文件
- * @param config 配置对象
- * @param configPath 配置文件路径
+ * 注册热重载回调
  */
-export function saveConfig(config: OuroborosConfig, configPath?: string): void {
-  try {
-    const path = configPath ?? join(process.cwd(), 'config.json');
-
-    // 确保目录存在
-    const dir = dirname(path);
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-
-    // 写入配置
-    writeFileSync(path, JSON.stringify(config, null, 2), 'utf-8');
-
-    logger.info('配置已保存', { path });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new ConfigError(`保存配置失败: ${message}`, 'ConfigLoader.saveConfig');
-  }
+export function onConfigReload(callback: (config: OuroborosConfig) => void): void {
+  reloadCallbacks.push(callback);
 }
 
 /**
  * 获取配置单例
- * @returns 配置对象
- * @throws ConfigError 如果配置未加载
  */
 export function getConfig(): OuroborosConfig {
   if (!configInstance) {
-    configInstance = loadConfig();
+    throw new ConfigError('配置未加载', 'ConfigLoader.getConfig');
   }
   return configInstance;
 }
 
 /**
  * 重新加载配置
- * @param configPath 配置文件路径
- * @returns 新的配置对象
  */
 export function reloadConfig(configPath?: string): OuroborosConfig {
-  configInstance = loadConfig(configPath);
-  return configInstance;
+  const config = loadConfig(configPath, true);
+  configInstance = config;
+  return config;
 }
 
 /**
  * 更新配置
- * @param updates 部分配置更新
  */
 export function updateConfig(updates: Partial<OuroborosConfig>): void {
   const current = getConfig();
-  configInstance = mergeConfig(current, updates);
+  const newConfig = mergeConfig(current, updates);
+  configInstance = newConfig;
+  saveConfigToDb(newConfig);
   logger.info('配置已更新');
 }
 
@@ -206,6 +266,8 @@ export function updateConfig(updates: Partial<OuroborosConfig>): void {
  * 重置为默认配置
  */
 export function resetToDefault(): void {
-  configInstance = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  const defaultConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as OuroborosConfig;
+  configInstance = defaultConfig;
+  saveConfigToDb(defaultConfig);
   logger.info('配置已重置为默认值');
 }

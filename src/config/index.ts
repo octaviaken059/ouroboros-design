@@ -5,8 +5,21 @@
  * @date 2026-02-18
  */
 
-export * from './types';
-export * from './defaults';
+export type {
+  OuroborosConfig,
+  CoreConfig,
+  HormoneConfig,
+  ModelEngineConfig,
+  MemoryConfig,
+  ToolConfig,
+  SafetyConfig,
+  EvolutionConfig,
+  LogConfig,
+  AdapterConfig,
+} from './types';
+
+export { DEFAULT_CONFIG } from './defaults';
+
 export {
   loadConfig,
   saveConfig,
@@ -14,4 +27,7 @@ export {
   reloadConfig,
   updateConfig,
   resetToDefault,
+  enableHotReload,
+  disableHotReload,
+  onConfigReload,
 } from './loader';

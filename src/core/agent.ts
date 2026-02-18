@@ -1,6 +1,6 @@
 /**
  * @file core/agent.ts
- * @description Ouroboros Agent 主类 - 集成所有模块
+ * @description Ouroboros Agent 主类 - 集成所有模块，支持持久化
  * @author Ouroboros
  * @date 2026-02-18
  */
@@ -20,6 +20,7 @@ import { PromptAssembler } from '@/capabilities/model-engine/prompt-assembler';
 import { PerformanceMonitor } from '@/capabilities/model-engine/performance-monitor';
 import type { ModelResponse } from '@/types/model';
 import { loadConfig, getConfig, type OuroborosConfig } from '@/config';
+import { initDatabase, saveAgentState, loadAgentState } from '@/db';
 import { createContextLogger } from '@/utils/logger';
 import { OuroborosError } from '@/utils/error';
 
@@ -33,6 +34,8 @@ export interface AgentOptions {
   configPath?: string;
   /** 自定义配置 */
   customConfig?: Partial<OuroborosConfig>;
+  /** 是否启用持久化 */
+  enablePersistence?: boolean;
 }
 
 /**
@@ -60,6 +63,7 @@ export interface AgentStatus {
  * - 自我描述系统（Identity/Body/WorldModel/CognitiveState/ToolSet）
  * - 激素系统（5种激素 + 触发器 + 情绪生成）
  * - 模型引擎（ModelClient + PromptAssembler + PerformanceMonitor）
+ * - 持久化（SQLite）
  */
 export class OuroborosAgent {
   /** 配置 */
@@ -86,30 +90,61 @@ export class OuroborosAgent {
   private running = false;
   private messageCount = 0;
   private startTime: string = '';
-  private updateInterval?: NodeJS.Timeout | undefined;
   private triggerCheckInterval?: NodeJS.Timeout | undefined;
+  private enablePersistence = true;
 
   /**
-   * 创建 Agent 实例
+   * 创建 Agent 实例（工厂方法）
    * @param options 选项
+   * @returns Agent 实例
    */
-  constructor(options: AgentOptions = {}) {
+  static create(options: AgentOptions = {}): OuroborosAgent {
+    const agent = new OuroborosAgent();
+    agent.initialize(options);
+    return agent;
+  }
+
+  /**
+   * 私有构造函数，使用 OuroborosAgent.create() 创建实例
+   */
+  private constructor() {
+    // 初始化在 initialize() 中完成
+  }
+
+  /**
+   * 初始化所有模块
+   */
+  private initialize(options: AgentOptions): void {
+    this.enablePersistence = options.enablePersistence ?? true;
+
     try {
-      // 加载配置
+      // 1. 初始化数据库
+      if (this.enablePersistence) {
+        initDatabase();
+      }
+
+      // 2. 加载配置
       if (options.configPath) {
-        this.config = loadConfig(options.configPath);
+        this.config = loadConfig(options.configPath, this.enablePersistence);
       } else {
-        this.config = getConfig();
+        this.config = loadConfig(undefined, this.enablePersistence);
       }
       
       if (options.customConfig) {
         this.config = { ...this.config, ...options.customConfig };
       }
       
-      this.initialize();
-      logger.info('Ouroboros Agent 创建成功');
+      // 3. 初始化所有模块
+      this.initModules();
+      
+      // 4. 尝试从数据库恢复状态
+      if (this.enablePersistence) {
+        this.restoreState();
+      }
+      
+      logger.info('Ouroboros Agent 初始化完成');
     } catch (error) {
-      logger.error('Agent 创建失败', { error });
+      logger.error('Agent 初始化失败', { error });
       throw error;
     }
   }
@@ -117,8 +152,8 @@ export class OuroborosAgent {
   /**
    * 初始化所有模块
    */
-  private initialize(): void {
-    const { core } = this.config;
+  private initModules(): void {
+    const { core, model } = this.config;
     
     // 1. 初始化自我描述模块
     this.identityManager = new IdentityManager(core.identity);
@@ -132,8 +167,11 @@ export class OuroborosAgent {
     this.triggerEngine = new TriggerEngine();
     this.emotionalStateGenerator = new EmotionalStateGenerator();
     
-    // 3. 初始化模型引擎模块
-    this.modelClient = new ModelClient();
+    // 3. 初始化模型引擎模块（带备用模型）
+    this.modelClient = new ModelClient(
+      model.defaultModel,
+      model.fallbackModel ?? undefined
+    );
     this.promptAssembler = new PromptAssembler();
     this.performanceMonitor = new PerformanceMonitor();
     
@@ -141,6 +179,38 @@ export class OuroborosAgent {
     this.registerDefaultTriggers();
     
     logger.info('所有模块初始化完成');
+  }
+
+  /**
+   * 从数据库恢复状态
+   */
+  private restoreState(): void {
+    const state = loadAgentState();
+    if (state) {
+      this.messageCount = state.messageCount;
+      logger.info('Agent 状态已从数据库恢复', {
+        messageCount: this.messageCount,
+        updatedAt: state.updatedAt,
+      });
+    }
+  }
+
+  /**
+   * 保存状态到数据库
+   */
+  private saveState(): void {
+    if (!this.enablePersistence) return;
+    
+    saveAgentState({
+      identity: this.identityManager.toJSON(),
+      body: this.bodyManager.toJSON(),
+      worldModel: this.worldModelManager.toJSON(),
+      cognitiveState: this.cognitiveStateManager.toJSON(),
+      toolSet: this.toolSetManager.toJSON(),
+      hormones: this.hormoneSystem.toJSON(),
+      performanceMonitor: this.performanceMonitor.toJSON(),
+      messageCount: this.messageCount,
+    });
   }
 
   /**
@@ -186,23 +256,13 @@ export class OuroborosAgent {
     this.running = true;
     this.startTime = new Date().toISOString();
     
-    // 启动激素系统更新循环
-    this.updateInterval = setInterval(() => {
-      // 应用自然衰减
-      const levels = this.hormoneSystem.getAllHormoneLevels();
-      for (const type of Object.keys(levels) as HormoneType[]) {
-        const engine = (this.hormoneSystem as unknown as { hormones: Map<HormoneType, unknown> }).hormones.get(type);
-        if (engine && typeof engine === 'object' && 'applyNaturalDecay' in engine) {
-          (engine as { applyNaturalDecay: () => void }).applyNaturalDecay();
-        }
-      }
-    }, this.config.hormone.updateIntervalMs);
+    // 启动激素系统（包含自然衰减）
+    this.hormoneSystem.start();
     
     // 启动触发器检查循环
     this.triggerCheckInterval = setInterval(() => {
-      const levels = this.hormoneSystem.getAllHormoneLevels();
-      const context: TriggerContext = { hormoneLevels: levels };
-      // 触发所有相关触发器
+      const snapshot = this.hormoneSystem.getSnapshot();
+      const context: TriggerContext = { hormoneLevels: snapshot.levels };
       this.triggerEngine.fire('novelty', context);
     }, this.config.hormone.triggerCheckIntervalMs);
     
@@ -212,22 +272,23 @@ export class OuroborosAgent {
   /**
    * 停止 Agent
    */
-  stop(): void {
+  async stop(): Promise<void> {
     if (!this.running) {
       return;
     }
     
     this.running = false;
     
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval);
-      this.updateInterval = undefined;
-    }
+    // 停止激素系统
+    this.hormoneSystem.stop();
     
     if (this.triggerCheckInterval) {
       clearInterval(this.triggerCheckInterval);
       this.triggerCheckInterval = undefined;
     }
+    
+    // 保存状态
+    this.saveState();
     
     logger.info('Ouroboros Agent 已停止');
   }
@@ -239,7 +300,11 @@ export class OuroborosAgent {
    */
   async processMessage(userInput: string): Promise<ModelResponse> {
     if (!this.running) {
-      throw new OuroborosError('Agent 未启动', 'UNKNOWN_ERROR', 'OuroborosAgent.processMessage');
+      throw new OuroborosError(
+        'Agent 未启动',
+        'UNKNOWN_ERROR',
+        'OuroborosAgent.processMessage'
+      );
     }
     
     const startTime = Date.now();
@@ -258,14 +323,14 @@ export class OuroborosAgent {
       const prompt = this.promptAssembler.assemble({
         systemPrompt: this.generateSystemPrompt(),
         selfDescription: JSON.stringify(selfDescription, null, 2),
-        memoryContext: '', // TODO: 集成记忆系统
+        memoryContext: '', // Phase 3 实现记忆系统
         userInput,
       });
       
       // 4. 创建消息列表
       const messages = this.promptAssembler.createMessages(prompt);
       
-      // 5. 调用模型
+      // 5. 调用模型（自动支持备用模型切换）
       const response = await this.modelClient.chat(messages);
       
       // 6. 记录性能
@@ -282,6 +347,11 @@ export class OuroborosAgent {
       const serotoninChange: HormoneChange = { hormone: 'serotonin', delta: 0.02, reason: '成功响应' };
       const oxytocinChange: HormoneChange = { hormone: 'oxytocin', delta: 0.01, reason: '成功响应' };
       this.hormoneSystem.applyHormoneChanges([serotoninChange, oxytocinChange]);
+      
+      // 8. 定期保存状态
+      if (this.messageCount % 10 === 0) {
+        this.saveState();
+      }
       
       return response;
     } catch (error) {
@@ -377,7 +447,7 @@ export class OuroborosAgent {
   }
 
   /**
-   * 获取激素系统实例（用于高级操作）
+   * 获取激素系统实例
    */
   getHormoneSystem(): HormoneSystem {
     return this.hormoneSystem;
@@ -395,5 +465,19 @@ export class OuroborosAgent {
    */
   getToolSetManager(): ToolSetManager {
     return this.toolSetManager;
+  }
+
+  /**
+   * 检查是否在使用备用模型
+   */
+  isUsingFallbackModel(): boolean {
+    return this.modelClient.isUsingFallback();
+  }
+
+  /**
+   * 切换回主模型
+   */
+  switchToPrimaryModel(): void {
+    this.modelClient.switchToPrimary();
   }
 }
