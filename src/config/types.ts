@@ -75,11 +75,28 @@ export interface MemoryConfig {
   consolidationThreshold: number;
   /** 遗忘系数(0-1) */
   forgettingRate: number;
+  /** 最大记忆数量 */
+  maxMemories: number;
+  /** 自动归档天数 */
+  autoArchiveDays: number;
   /** 向量存储配置 */
   vectorStore: {
     enabled: boolean;
     dimension: number;
     similarityThreshold: number;
+  };
+  /** 检索配置 */
+  retrieval: {
+    /** 默认返回记忆数量 */
+    defaultLimit: number;
+    /** 最大返回记忆数量 */
+    maxLimit: number;
+    /** 语义检索权重 */
+    semanticWeight: number;
+    /** 时间衰减权重 */
+    temporalWeight: number;
+    /** 重要性权重 */
+    importanceWeight: number;
   };
 }
 

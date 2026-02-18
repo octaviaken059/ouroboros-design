@@ -86,6 +86,33 @@ export function initDatabase(): void {
     )
   `);
 
+  // 记忆表
+  (db as { exec: (s: string) => void }).exec(`
+    CREATE TABLE IF NOT EXISTS memories (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      last_accessed_at TEXT NOT NULL,
+      access_count INTEGER DEFAULT 0,
+      importance REAL DEFAULT 0.5,
+      emotional_intensity REAL DEFAULT 0,
+      confidence REAL DEFAULT 1.0,
+      related_memory_ids TEXT DEFAULT '[]',
+      tags TEXT DEFAULT '[]',
+      data TEXT NOT NULL
+    )
+  `);
+
+  // 记忆向量表
+  (db as { exec: (s: string) => void }).exec(`
+    CREATE TABLE IF NOT EXISTS memory_vectors (
+      memory_id TEXT PRIMARY KEY,
+      vector BLOB,
+      FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE
+    )
+  `);
+
   logger.info('数据库表初始化完成');
 }
 

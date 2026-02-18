@@ -10,6 +10,7 @@ import { BodyManager } from './self-description/body';
 import { WorldModelManager } from './self-description/world-model';
 import { CognitiveStateManager } from './self-description/cognitive-state';
 import { ToolSetManager } from './self-description/tool-set';
+import { MemorySystem } from './memory/memory-system';
 import { HormoneSystem } from '@/evolution/hormone/hormone-system';
 import { TriggerEngine } from '@/evolution/hormone/trigger-engine';
 import { EmotionalStateGenerator } from '@/evolution/hormone/emotional-state-generator';
@@ -75,6 +76,9 @@ export class OuroborosAgent {
   private worldModelManager!: WorldModelManager;
   private cognitiveStateManager!: CognitiveStateManager;
   private toolSetManager!: ToolSetManager;
+  
+  // 记忆模块
+  private memorySystem!: MemorySystem;
   
   // 激素模块
   private hormoneSystem!: HormoneSystem;
@@ -162,7 +166,8 @@ export class OuroborosAgent {
     this.cognitiveStateManager = new CognitiveStateManager();
     this.toolSetManager = new ToolSetManager();
     
-    // 2. 初始化激素模块
+    // 2. 初始化记忆系统
+    this.memorySystem = new MemorySystem();
     this.hormoneSystem = new HormoneSystem();
     this.triggerEngine = new TriggerEngine();
     this.emotionalStateGenerator = new EmotionalStateGenerator();
@@ -316,24 +321,30 @@ export class OuroborosAgent {
       const norepinephrineChange: HormoneChange = { hormone: 'norepinephrine', delta: 0.03, reason: '用户交互' };
       this.hormoneSystem.applyHormoneChanges([dopamineChange, norepinephrineChange]);
       
-      // 2. 获取统一的自我描述
+      // 2. 获取记忆上下文
+      const memoryContext = await this.memorySystem.generateMemoryContext(userInput);
+      
+      // 3. 获取统一的自我描述
       const selfDescription = this.getSelfDescription();
       
-      // 3. 组装提示词
+      // 4. 组装提示词（系统提示词 + 自我描述 + 记忆上下文）
       const prompt = this.promptAssembler.assemble({
         systemPrompt: this.generateSystemPrompt(),
         selfDescription: JSON.stringify(selfDescription, null, 2),
-        memoryContext: '', // Phase 3 实现记忆系统
+        memoryContext: memoryContext.contextText,
         userInput,
       });
       
-      // 4. 创建消息列表
+      // 5. 创建消息列表
       const messages = this.promptAssembler.createMessages(prompt);
       
-      // 5. 调用模型（自动支持备用模型切换）
+      // 6. 调用模型（自动支持备用模型切换）
       const response = await this.modelClient.chat(messages);
       
-      // 6. 记录性能
+      // 7. 记录对话到记忆系统
+      await this.memorySystem.recordConversation(userInput, response.content);
+      
+      // 8. 记录性能
       this.performanceMonitor.record({
         model: response.model,
         inputTokens: response.tokens.prompt,
@@ -343,12 +354,12 @@ export class OuroborosAgent {
         timestamp: new Date().toISOString(),
       });
       
-      // 7. 成功响应后增加血清素（满足感）
+      // 9. 成功响应后增加血清素（满足感）
       const serotoninChange: HormoneChange = { hormone: 'serotonin', delta: 0.02, reason: '成功响应' };
       const oxytocinChange: HormoneChange = { hormone: 'oxytocin', delta: 0.01, reason: '成功响应' };
       this.hormoneSystem.applyHormoneChanges([serotoninChange, oxytocinChange]);
       
-      // 8. 定期保存状态
+      // 10. 定期保存状态
       if (this.messageCount % 10 === 0) {
         this.saveState();
       }
@@ -397,12 +408,21 @@ export class OuroborosAgent {
    */
   getSelfDescription(): Record<string, unknown> {
     const snapshot = this.hormoneSystem.getSnapshot();
+    const memoryStats = this.memorySystem.getStats();
     return {
       identity: this.identityManager.toJSON(),
       body: this.bodyManager.toJSON(),
       worldModel: this.worldModelManager.toJSON(),
       cognitiveState: this.cognitiveStateManager.toJSON(),
       toolSet: this.toolSetManager.toJSON(),
+      memory: {
+        stats: memoryStats,
+        recentMemories: this.memorySystem.getRecentMemories(3).map(m => ({
+          type: m.type,
+          content: m.content.slice(0, 100),
+          importance: m.importance,
+        })),
+      },
       hormones: snapshot.levels,
       emotion: this.emotionalStateGenerator.generateEmotionalState(snapshot),
     };
@@ -465,6 +485,13 @@ export class OuroborosAgent {
    */
   getToolSetManager(): ToolSetManager {
     return this.toolSetManager;
+  }
+
+  /**
+   * 获取记忆系统
+   */
+  getMemorySystem(): MemorySystem {
+    return this.memorySystem;
   }
 
   /**

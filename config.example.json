@@ -77,10 +77,19 @@
     "longTermStorageDir": "./data/memory",
     "consolidationThreshold": 0.7,
     "forgettingRate": 0.01,
+    "maxMemories": 10000,
+    "autoArchiveDays": 30,
     "vectorStore": {
       "enabled": true,
       "dimension": 768,
       "similarityThreshold": 0.7
+    },
+    "retrieval": {
+      "defaultLimit": 5,
+      "maxLimit": 20,
+      "semanticWeight": 0.4,
+      "temporalWeight": 0.3,
+      "importanceWeight": 0.3
     }
   },
   "tool": {

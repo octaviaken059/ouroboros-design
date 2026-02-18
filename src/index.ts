@@ -43,6 +43,19 @@ export type {
 } from './types/hormone';
 
 export type {
+  Memory,
+  AnyMemory,
+  MemoryType,
+  EpisodicMemory,
+  SemanticMemory,
+  ProceduralMemory,
+  ReflectiveMemory,
+  MemoryQueryOptions,
+  MemoryRetrievalResult,
+  MemoryContext,
+} from './types/memory';
+
+export type {
   ModelConfig,
   ModelProvider,
   TokenBudget,
