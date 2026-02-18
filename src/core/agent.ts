@@ -11,6 +11,7 @@ import { WorldModelManager } from './self-description/world-model';
 import { CognitiveStateManager } from './self-description/cognitive-state';
 import { ToolSetManager } from './self-description/tool-set';
 import { MemorySystem } from './memory/memory-system';
+import { BayesianCore } from './bayesian/bayesian-core';
 import { HormoneSystem } from '@/evolution/hormone/hormone-system';
 import { TriggerEngine } from '@/evolution/hormone/trigger-engine';
 import { EmotionalStateGenerator } from '@/evolution/hormone/emotional-state-generator';
@@ -79,6 +80,9 @@ export class OuroborosAgent {
   
   // 记忆模块
   private memorySystem!: MemorySystem;
+  
+  // 贝叶斯认知核心
+  private bayesianCore!: BayesianCore;
   
   // 激素模块
   private hormoneSystem!: HormoneSystem;
@@ -168,6 +172,12 @@ export class OuroborosAgent {
     
     // 2. 初始化记忆系统
     this.memorySystem = new MemorySystem();
+    
+    // 3. 初始化贝叶斯认知核心
+    this.bayesianCore = new BayesianCore();
+    this.registerDefaultTools();
+    
+    // 4. 初始化激素模块
     this.hormoneSystem = new HormoneSystem();
     this.triggerEngine = new TriggerEngine();
     this.emotionalStateGenerator = new EmotionalStateGenerator();
@@ -250,6 +260,62 @@ export class OuroborosAgent {
   }
 
   /**
+   * 注册默认工具（用于贝叶斯置信度学习）
+   */
+  private registerDefaultTools(): void {
+    // 注册模型调用工具
+    this.bayesianCore.registerTool('model_call', 5, 1); // 5次成功，1次失败
+    
+    // 注册记忆检索工具
+    this.bayesianCore.registerTool('memory_retrieval', 3, 0);
+    
+    // 注册提示词组装工具
+    this.bayesianCore.registerTool('prompt_assembly', 4, 0);
+    
+    logger.info('默认工具已注册到贝叶斯核心');
+  }
+
+  /**
+   * 启动艾宾浩斯遗忘调度
+   */
+  private startEbbinghausScheduler(): void {
+    // 每30分钟运行一次记忆巩固检查
+    const consolidationInterval = setInterval(() => {
+      const consolidated = this.memorySystem.consolidateMemories();
+      if (consolidated.length > 0) {
+        logger.info('记忆自动巩固完成', { count: consolidated.length });
+      }
+    }, 30 * 60 * 1000); // 30分钟
+
+    // 每2小时运行一次记忆修剪（遗忘低显著性记忆）
+    const pruningInterval = setInterval(() => {
+      const pruned = this.memorySystem.pruneMemories(0.1); // 阈值0.1
+      if (pruned > 0) {
+        logger.info('低显著性记忆已清理', { count: pruned });
+      }
+    }, 2 * 60 * 60 * 1000); // 2小时
+
+    // 保存定时器引用以便清理
+    (this as unknown as { _ebbinghausIntervals: NodeJS.Timeout[] })._ebbinghausIntervals = [
+      consolidationInterval,
+      pruningInterval,
+    ];
+
+    logger.info('艾宾浩斯遗忘调度已启动');
+  }
+
+  /**
+   * 停止艾宾浩斯遗忘调度
+   */
+  private stopEbbinghausScheduler(): void {
+    const intervals = (this as unknown as { _ebbinghausIntervals?: NodeJS.Timeout[] })._ebbinghausIntervals;
+    if (intervals) {
+      intervals.forEach(clearInterval);
+      logger.info('艾宾浩斯遗忘调度已停止');
+    }
+  }
+
+  /**
    * 启动 Agent
    */
   async start(): Promise<void> {
@@ -263,6 +329,9 @@ export class OuroborosAgent {
     
     // 启动激素系统（包含自然衰减）
     this.hormoneSystem.start();
+    
+    // 启动艾宾浩斯遗忘调度
+    this.startEbbinghausScheduler();
     
     // 启动触发器检查循环
     this.triggerCheckInterval = setInterval(() => {
@@ -286,6 +355,9 @@ export class OuroborosAgent {
     
     // 停止激素系统
     this.hormoneSystem.stop();
+    
+    // 停止艾宾浩斯遗忘调度
+    this.stopEbbinghausScheduler();
     
     if (this.triggerCheckInterval) {
       clearInterval(this.triggerCheckInterval);
@@ -359,7 +431,12 @@ export class OuroborosAgent {
       const oxytocinChange: HormoneChange = { hormone: 'oxytocin', delta: 0.01, reason: '成功响应' };
       this.hormoneSystem.applyHormoneChanges([serotoninChange, oxytocinChange]);
       
-      // 10. 定期保存状态
+      // 10. 更新贝叶斯置信度（成功）
+      this.bayesianCore.updateToolConfidence('model_call', true);
+      this.bayesianCore.updateToolConfidence('memory_retrieval', true);
+      this.bayesianCore.updateToolConfidence('prompt_assembly', true);
+      
+      // 11. 定期保存状态
       if (this.messageCount % 10 === 0) {
         this.saveState();
       }
@@ -369,6 +446,9 @@ export class OuroborosAgent {
       // 错误时增加皮质醇（压力）
       const cortisolChange: HormoneChange = { hormone: 'cortisol', delta: 0.1, reason: '错误发生' };
       this.hormoneSystem.applyHormoneChanges([cortisolChange]);
+      
+      // 更新贝叶斯置信度（失败）
+      this.bayesianCore.updateToolConfidence('model_call', false);
       
       this.performanceMonitor.record({
         model: this.config.model.defaultModel.model,
@@ -492,6 +572,13 @@ export class OuroborosAgent {
    */
   getMemorySystem(): MemorySystem {
     return this.memorySystem;
+  }
+
+  /**
+   * 获取贝叶斯认知核心
+   */
+  getBayesianCore(): BayesianCore {
+    return this.bayesianCore;
   }
 
   /**

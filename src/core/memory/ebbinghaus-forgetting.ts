@@ -46,7 +46,7 @@ export function calculateRetentionRate(
   const retentionRate = Math.exp(-(lambda * hoursPassed) / strengthMultiplier);
   
   // 确保最小保留率 (重要记忆不会完全遗忘)
-  return Math.max(0.05, retentionRate);
+  return Math.max(0.01, retentionRate);
 }
 
 /**
