@@ -40,4 +40,4 @@ echo ""
 # 启动
 unset DEBUG
 export DEBUG=""
-node launch.js
+node launch.cjs
