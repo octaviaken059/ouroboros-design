@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts",
+    "dev": "DEBUG= tsx watch src/main.ts",
+    "start": "DEBUG= tsx src/main.ts",
     "start:build": "npm run build && node dist/src/main.js",
     "test": "jest",
     "test:watch": "jest --watch",
