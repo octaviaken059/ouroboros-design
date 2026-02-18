@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "name": "ouroboros-chat",
+  "builds": [
+    {
+      "src": "dist/adapters/web-server-simple.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/adapters/web-server-simple.js"
+    }
+  ],
+  "env": {
+    "OLLAMA_BASE_URL": "https://ollama-proxy.vercel.app",
+    "OPENAI_MODEL": "deepseek-r1:8b"
+  }
+}
