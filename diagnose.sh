@@ -40,4 +40,4 @@ echo ""
 # 启动
 unset DEBUG
 export DEBUG=""
-node launch.mjs 2>&1 | grep -E "(启动成功|失败|http://|Error|Error:)" || true
+node launch.js
