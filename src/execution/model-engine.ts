@@ -52,6 +52,7 @@ export interface ToolDefinition {
 
 export interface StreamChunk {
   content?: string;
+  thinking?: string;  // deepseek-r1 thinking content
   toolCalls?: ToolCall[];
   finishReason?: 'stop' | 'length' | 'tool_calls' | null;
   usage?: {
@@ -521,6 +522,8 @@ export class ModelEngine extends EventEmitter {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+    let thinkingBuffer = '';
+    let inThinking = false;
 
     try {
       while (true) {
@@ -536,7 +539,41 @@ export class ModelEngine extends EventEmitter {
             const result: StreamChunk = {};
 
             if (parsed.message?.content) {
-              result.content = parsed.message.content;
+              const content = parsed.message.content;
+              
+              // Parse deepseek-r1 thinking tags
+              if (content.includes('<think>')) {
+                inThinking = true;
+                const thinkStart = content.indexOf('<think>');
+                const thinkEnd = content.indexOf('</think>');
+                
+                if (thinkEnd > -1) {
+                  // Complete thinking block
+                  thinkingBuffer = content.substring(thinkStart + 7, thinkEnd);
+                  result.thinking = thinkingBuffer;
+                  result.content = content.substring(0, thinkStart) + content.substring(thinkEnd + 8);
+                  inThinking = false;
+                  thinkingBuffer = '';
+                } else {
+                  // Start of thinking block
+                  thinkingBuffer = content.substring(thinkStart + 7);
+                }
+              } else if (inThinking) {
+                const thinkEnd = content.indexOf('</think>');
+                if (thinkEnd > -1) {
+                  // End of thinking block
+                  thinkingBuffer += content.substring(0, thinkEnd);
+                  result.thinking = thinkingBuffer;
+                  result.content = content.substring(thinkEnd + 8);
+                  inThinking = false;
+                  thinkingBuffer = '';
+                } else {
+                  // Continue thinking
+                  thinkingBuffer += content;
+                }
+              } else {
+                result.content = content;
+              }
             }
 
             if (parsed.message?.tool_calls) {
@@ -556,7 +593,7 @@ export class ModelEngine extends EventEmitter {
               yield result;
             }
           } catch (e) {
-            // 忽略解析错误
+            // Ignore parse errors
           }
         }
       }

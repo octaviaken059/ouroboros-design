@@ -1,365 +1,665 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ouroboros - 具身自指进化AI Agent</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ouroboros - AI Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 15px 20px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .model-info {
+            font-size: 12px;
+            color: #64748b;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .model-badge {
+            background: #334155;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+        }
+        
+        .welcome-message h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .welcome-message p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        /* Messages */
+        .message {
+            max-width: 80%;
+            padding: 15px;
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        .message.assistant {
+            align-self: flex-start;
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+        
+        .message-header {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .message-content {
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        /* Thinking Section */
+        .thinking-section {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border-left: 3px solid #f59e0b;
+        }
+        
+        .thinking-header {
+            font-size: 11px;
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .thinking-content {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            display: none;
+        }
+        
+        .thinking-content.show {
+            display: block;
+        }
+        
+        .thinking-toggle {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .thinking-toggle.rotated {
+            transform: rotate(90deg);
+        }
+        
+        /* Streaming Indicator */
+        .streaming-indicator {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+            padding: 8px 12px;
+            background: #1e293b;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .streaming-indicator span {
+            width: 6px;
+            height: 6px;
+            background: #60a5fa;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .streaming-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .streaming-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        /* Input Area */
+        .input-container {
+            padding: 20px;
+            background: #1e293b;
+            border-top: 1px solid #334155;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .message-input:focus {
+            border-color: #3b82f6;
+        }
+        
+        .message-input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .send-button:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+        
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Usage Stats */
+        .usage-stats {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        /* Error Message */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 20px;
+            font-size: 13px;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
 </head>
 <body>
-  <div id="app">
-    <!-- 侧边栏 -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <span class="logo-icon">🐍⭕</span>
-          <span class="logo-text">Ouroboros</span>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <span>🐍</span>
+                Ouroboros Chat
+            </h1>
+            <div class="model-info">
+                <span class="status-indicator"></span>
+                <span class="model-badge" id="model-name">Loading...</span>
+                <span id="connection-status">Connecting...</span>
+            </div>
         </div>
-        <button class="sidebar-toggle" id="sidebarToggle">
-          <svg viewBox="0 0 24 24" width="24" height="24">
-            <path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
-          </svg>
-        </button>
-      </div>
-
-      <nav class="sidebar-nav">
-        <a href="#dashboard" class="nav-item active" data-page="dashboard">
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-          </svg>
-          <span>仪表盘</span>
-        </a>
-        <a href="#terminal" class="nav-item" data-page="terminal">
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM7.5 15l4.5-4.5L7.5 6l1-1 5.5 5.5-5.5 5.5-1-1z"/>
-          </svg>
-          <span>终端</span>
-        </a>
-        <a href="#memory" class="nav-item" data-page="memory">
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-          </svg>
-          <span>记忆</span>
-        </a>
-        <a href="#hormones" class="nav-item" data-page="hormones">
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-          </svg>
-          <span>激素系统</span>
-        </a>
-        <a href="#settings" class="nav-item" data-page="settings">
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.16 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
-          </svg>
-          <span>设置</span>
-        </a>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="connection-status" id="connectionStatus">
-          <span class="status-dot"></span>
-          <span class="status-text">连接中...</span>
+        
+        <!-- Error Container -->
+        <div id="error-container"></div>
+        
+        <!-- Chat Area -->
+        <div class="chat-container" id="chat-container">
+            <div class="welcome-message">
+                <h2>👋 Welcome to Ouroboros</h2>
+                <p>
+                    我是一个基于 <strong>deepseek-r1:8b</strong> 的 AI Agent<br>
+                    支持 <strong>流式响应</strong> 和 <strong>思考过程</strong> 展示<br>
+                    点击消息中的 "🧠 Thinking" 可以查看我的推理过程
+                </p>
+            </div>
         </div>
-        <div class="version">v1.0.0</div>
-      </div>
-    </aside>
-
-    <!-- 主内容区 -->
-    <main class="main-content">
-      <!-- 顶部栏 -->
-      <header class="header">
-        <h1 class="page-title" id="pageTitle">仪表盘</h1>
-        <div class="header-actions">
-          <button class="btn btn-icon" id="refreshBtn" title="刷新">
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-            </svg>
-          </button>
-          <button class="btn btn-icon" id="notificationBtn" title="通知">
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
-            </svg>
-            <span class="badge" id="notificationBadge">0</span>
-          </button>
+        
+        <!-- Input Area -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea 
+                    class="message-input" 
+                    id="message-input" 
+                    placeholder="输入消息... (Shift+Enter 换行, Enter 发送)"
+                    rows="1"
+                ></textarea>
+                <button class="send-button" id="send-button">
+                    <span>➤</span>
+                    发送
+                </button>
+            </div>
+            <div class="usage-stats" id="usage-stats"></div>
         </div>
-      </header>
-
-      <!-- 页面内容 -->
-      <div class="page-content">
-        <!-- 仪表盘页面 -->
-        <div class="page active" id="page-dashboard">
-          <div class="dashboard-grid">
-            <!-- 状态卡片 -->
-            <div class="card status-card">
-              <div class="card-header">
-                <h3>系统状态</h3>
-                <span class="badge badge-success" id="healthBadge">健康</span>
-              </div>
-              <div class="card-body">
-                <div class="status-grid">
-                  <div class="status-item">
-                    <span class="status-label">运行时间</span>
-                    <span class="status-value" id="uptimeValue">-</span>
-                  </div>
-                  <div class="status-item">
-                    <span class="status-label">进程ID</span>
-                    <span class="status-value" id="pidValue">-</span>
-                  </div>
-                  <div class="status-item">
-                    <span class="status-label">版本</span>
-                    <span class="status-value" id="versionValue">-</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 资源使用 -->
-            <div class="card resource-card">
-              <div class="card-header">
-                <h3>资源使用</h3>
-              </div>
-              <div class="card-body">
-                <div class="resource-item">
-                  <div class="resource-info">
-                    <span class="resource-name">内存</span>
-                    <span class="resource-value" id="memoryValue">- / -</span>
-                  </div>
-                  <div class="progress-bar">
-                    <div class="progress-fill" id="memoryProgress" style="width: 0%"></div>
-                  </div>
-                </div>
-                <div class="resource-item">
-                  <div class="resource-info">
-                    <span class="resource-name">CPU</span>
-                    <span class="resource-value" id="cpuValue">-</span>
-                  </div>
-                  <div class="progress-bar">
-                    <div class="progress-fill" id="cpuProgress" style="width: 0%"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 任务统计 -->
-            <div class="card tasks-card">
-              <div class="card-header">
-                <h3>任务统计</h3>
-              </div>
-              <div class="card-body">
-                <div class="stats-grid">
-                  <div class="stat-item">
-                    <span class="stat-value" id="pendingTasks">0</span>
-                    <span class="stat-label">待处理</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-value" id="runningTasks">0</span>
-                    <span class="stat-label">运行中</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-value" id="completedTasks">0</span>
-                    <span class="stat-label">已完成</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-value" id="failedTasks">0</span>
-                    <span class="stat-label">失败</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 激素水平 -->
-            <div class="card hormones-card">
-              <div class="card-header">
-                <h3>激素水平</h3>
-              </div>
-              <div class="card-body">
-                <div class="hormone-list" id="hormoneList">
-                  <div class="hormone-item">
-                    <span class="hormone-name">肾上腺素</span>
-                    <div class="hormone-bar">
-                      <div class="hormone-fill" style="width: 0%"></div>
-                    </div>
-                    <span class="hormone-value">0%</span>
-                  </div>
-                  <div class="hormone-item">
-                    <span class="hormone-name">皮质醇</span>
-                    <div class="hormone-bar">
-                      <div class="hormone-fill" style="width: 0%"></div>
-                    </div>
-                    <span class="hormone-value">0%</span>
-                  </div>
-                  <div class="hormone-item">
-                    <span class="hormone-name">多巴胺</span>
-                    <div class="hormone-bar">
-                      <div class="hormone-fill" style="width: 0%"></div>
-                    </div>
-                    <span class="hormone-value">0%</span>
-                  </div>
-                  <div class="hormone-item">
-                    <span class="hormone-name">血清素</span>
-                    <div class="hormone-bar">
-                      <div class="hormone-fill" style="width: 0%"></div>
-                    </div>
-                    <span class="hormone-value">0%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 日志预览 -->
-            <div class="card logs-card">
-              <div class="card-header">
-                <h3>实时日志</h3>
-                <button class="btn btn-sm" id="clearLogs">清空</button>
-              </div>
-              <div class="card-body">
-                <div class="logs-container" id="logsContainer">
-                  <div class="log-entry log-info">
-                    <span class="log-time">--:--:--</span>
-                    <span class="log-level">INFO</span>
-                    <span class="log-message">系统初始化完成</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 终端页面 -->
-        <div class="page" id="page-terminal">
-          <div class="terminal-container">
-            <div class="terminal-output" id="terminalOutput"></div>
-            <div class="terminal-input-wrapper">
-              <span class="terminal-prompt">ouro></span>
-              <input 
-                type="text" 
-                class="terminal-input" 
-                id="terminalInput" 
-                placeholder="输入命令..."
-                autocomplete="off"
-                spellcheck="false"
-              >
-            </div>
-          </div>
-        </div>
-
-        <!-- 记忆页面 -->
-        <div class="page" id="page-memory">
-          <div class="memory-container">
-            <div class="memory-filters">
-              <input type="text" class="search-input" id="memorySearch" placeholder="搜索记忆...">
-              <select class="filter-select" id="memoryType">
-                <option value="">全部类型</option>
-                <option value="working">工作记忆</option>
-                <option value="episodic">情景记忆</option>
-                <option value="semantic">语义记忆</option>
-                <option value="procedural">程序记忆</option>
-                <option value="reflective">反思记忆</option>
-              </select>
-            </div>
-            <div class="memory-list" id="memoryList">
-              <div class="empty-state">
-                <span class="empty-icon">🧠</span>
-                <p>暂无记忆数据</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 激素系统页面 -->
-        <div class="page" id="page-hormones">
-          <div class="hormones-container">
-            <div class="hormones-grid" id="hormonesDetail">
-              <!-- 动态生成 --
-              <div class="card hormone-detail-card">
-                <div class="card-header">
-                  <h3>肾上腺素 (Adrenaline)</h3>
-                  <span class="hormone-badge high">高</span>
-                </div>
-                <div class="card-body">
-                  <div class="hormone-chart">
-                    <canvas id="adrenalineChart"></canvas>
-                  </div>
-                  <div class="hormone-info">
-                    <p><strong>作用：</strong>提升专注，应对紧急情况</p>
-                    <p><strong>触发条件：</strong>错误/异常</p>
-                    <p><strong>当前水平：</strong>0.85</p>
-                  </div>
-                </div>
-              </div>
-              -->
-            </div>
-          </div>
-        </div>
-
-        <!-- 设置页面 -->
-        <div class="page" id="page-settings">
-          <div class="settings-container">
-            <div class="settings-section">
-              <h3>连接设置</h3>
-              <div class="form-group">
-                <label>WebSocket URL</label>
-                <input type="text" id="wsUrl" value="ws://localhost:8080/ws">
-              </div>
-              <div class="form-group">
-                <label>API URL</label>
-                <input type="text" id="apiUrl" value="http://localhost:8080/api">
-              </div>
-              <button class="btn btn-primary" id="saveConnection">保存</button>
-            </div>
-
-            <div class="settings-section">
-              <h3>显示设置</h3>
-              <div class="form-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" id="darkMode" checked>
-                  <span>深色模式</span>
-                </label>
-              </div>
-              <div class="form-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" id="showTimestamps" checked>
-                  <span>显示时间戳</span>
-                </label>
-              </div>
-              <div class="form-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" id="autoScroll" checked>
-                  <span>自动滚动</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="settings-section">
-              <h3>关于</h3>
-              <div class="about-info">
-                <p><strong>Ouroboros</strong> - 具身自指进化AI Agent</p>
-                <p>版本: 1.0.0</p>
-                <p>🐍⭕ 衔尾蛇 - 自我指涉的终极象征</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- 通知面板 -->
-    <div class="notification-panel" id="notificationPanel">
-      <div class="notification-header">
-        <h3>通知</h3>
-        <button class="btn btn-sm" id="clearNotifications">清空</button>
-      </div>
-      <div class="notification-list" id="notificationList">
-        <div class="notification-empty">暂无通知</div>
-      </div>
     </div>
 
-    <!-- Toast容器 -->
-    <div class="toast-container" id="toastContainer"></div>
-  </div>
-
-  <script src="app.js"></script>
+    <script>
+        // DOM Elements
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const modelName = document.getElementById('model-name');
+        const connectionStatus = document.getElementById('connection-status');
+        const errorContainer = document.getElementById('error-container');
+        const usageStats = document.getElementById('usage-stats');
+        
+        // State
+        let isStreaming = false;
+        let ws = null;
+        let currentMessageDiv = null;
+        let currentThinkingDiv = null;
+        let currentContentDiv = null;
+        
+        // Initialize
+        async function init() {
+            await fetchModelInfo();
+            setupWebSocket();
+            setupEventListeners();
+        }
+        
+        // Fetch Model Info
+        async function fetchModelInfo() {
+            try {
+                const response = await fetch('/api/model');
+                const data = await response.json();
+                modelName.textContent = data.model;
+                connectionStatus.textContent = data.supportsThinking ? 'Think + Stream Ready' : 'Ready';
+            } catch (error) {
+                modelName.textContent = 'Unknown';
+                connectionStatus.textContent = 'Offline';
+                showError('无法连接到服务器');
+            }
+        }
+        
+        // Setup WebSocket
+        function setupWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                connectionStatus.textContent = 'Connected';
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                connectionStatus.textContent = 'Disconnected';
+                // Reconnect after 3 seconds
+                setTimeout(setupWebSocket, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                showError('WebSocket 连接错误');
+            };
+        }
+        
+        // Handle WebSocket Messages
+        function handleWebSocketMessage(data) {
+            if (data.type === 'chunk') {
+                if (!currentMessageDiv) {
+                    currentMessageDiv = createAssistantMessage();
+                }
+                
+                if (data.thinking) {
+                    updateThinking(data.thinking);
+                }
+                
+                if (data.content) {
+                    updateContent(data.content);
+                }
+                
+                if (data.finishReason) {
+                    finishStreaming();
+                }
+            } else if (data.type === 'error') {
+                showError(data.error);
+                finishStreaming();
+            }
+        }
+        
+        // Create Assistant Message
+        function createAssistantMessage() {
+            const div = document.createElement('div');
+            div.className = 'message assistant';
+            div.innerHTML = `
+                <div class="message-header">
+                    <span>🤖</span>
+                    <span>Assistant</span>
+                </div>
+                <div class="message-content"></div>
+                <div class="streaming-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    思考中...
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            currentContentDiv = div.querySelector('.message-content');
+            return div;
+        }
+        
+        // Update Thinking
+        function updateThinking(thinking) {
+            if (!currentThinkingDiv) {
+                currentThinkingDiv = document.createElement('div');
+                currentThinkingDiv.className = 'thinking-section';
+                currentThinkingDiv.innerHTML = `
+                    <div class="thinking-header" onclick="toggleThinking(this)">
+                        <span class="thinking-toggle">▶</span>
+                        <span>🧠 Thinking</span>
+                    </div>
+                    <div class="thinking-content"></div>
+                `;
+                currentMessageDiv.appendChild(currentThinkingDiv);
+            }
+            
+            const content = currentThinkingDiv.querySelector('.thinking-content');
+            content.textContent = thinking;
+        }
+        
+        // Update Content
+        function updateContent(content) {
+            const indicator = currentMessageDiv.querySelector('.streaming-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+            
+            currentContentDiv.textContent += content;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Finish Streaming
+        function finishStreaming() {
+            isStreaming = false;
+            sendButton.disabled = false;
+            messageInput.disabled = false;
+            messageInput.focus();
+            
+            if (currentMessageDiv) {
+                const indicator = currentMessageDiv.querySelector('.streaming-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+            
+            currentMessageDiv = null;
+            currentThinkingDiv = null;
+            currentContentDiv = null;
+        }
+        
+        // Toggle Thinking
+        window.toggleThinking = function(header) {
+            const content = header.nextElementSibling;
+            const toggle = header.querySelector('.thinking-toggle');
+            content.classList.toggle('show');
+            toggle.classList.toggle('rotated');
+        };
+        
+        // Send Message
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || isStreaming) return;
+            
+            // Add user message
+            addUserMessage(text);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            
+            // Start streaming
+            isStreaming = true;
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+            
+            // Send via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'chat',
+                    messages: [
+                        { role: 'user', content: text }
+                    ],
+                    stream: true
+                }));
+            } else {
+                // Fallback to HTTP streaming
+                streamViaHTTP(text);
+            }
+        }
+        
+        // Add User Message
+        function addUserMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'message user';
+            div.innerHTML = `
+                <div class="message-header">
+                    <span>👤</span>
+                    <span>You</span>
+                </div>
+                <div class="message-content">${escapeHtml(text)}</div>
+            `;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Stream via HTTP
+        async function streamViaHTTP(text) {
+            try {
+                const response = await fetch('/api/chat/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: text }],
+                        stream: true
+                    })
+                });
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                finishStreaming();
+                                return;
+                            }
+                            
+                            try {
+                                const parsed = JSON.parse(data);
+                                handleWebSocketMessage({
+                                    type: 'chunk',
+                                    ...parsed
+                                });
+                            } catch (e) {
+                                // Ignore
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                showError('请求失败: ' + error.message);
+                finishStreaming();
+            }
+        }
+        
+        // Setup Event Listeners
+        function setupEventListeners() {
+            sendButton.addEventListener('click', sendMessage);
+            
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            messageInput.addEventListener('input', () => {
+                messageInput.style.height = 'auto';
+                messageInput.style.height = messageInput.scrollHeight + 'px';
+            });
+        }
+        
+        // Show Error
+        function showError(message) {
+            const div = document.createElement('div');
+            div.className = 'error-message';
+            div.textContent = '❌ ' + message;
+            errorContainer.appendChild(div);
+            
+            setTimeout(() => {
+                div.remove();
+            }, 5000);
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Initialize
+        init();
+    </script>
 </body>
 </html>

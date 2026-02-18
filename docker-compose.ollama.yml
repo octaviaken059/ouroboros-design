@@ -1,0 +1,40 @@
+# Ouroboros + Ollama Docker 配置
+
+version: '3.8'
+
+services:
+  ouroboros:
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    container_name: ouroboros
+    ports:
+      - "8080:8080"
+    environment:
+      - OURO_MODE=web
+      - OURO_PORT=8080
+      - OURO_HOST=0.0.0.0
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OPENAI_MODEL=deepseek-r1:8b
+      - OURO_DATA_DIR=/app/data
+      - OURO_LOG_LEVEL=info
+      - OURO_HOMEOSTASIS=true
+      - OURO_REFLECTION=true
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ouroboros-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  ouroboros-network:
+    driver: bridge

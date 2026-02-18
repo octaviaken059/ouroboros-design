@@ -1,0 +1,32 @@
+# Ouroboros + Ollama 支持 Docker 镜像
+
+FROM node:20-alpine
+
+# 安装 curl (用于健康检查)
+RUN apk add --no-cache curl
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制 package 文件
+COPY package*.json ./
+
+# 安装依赖
+RUN npm ci --only=production
+
+# 复制编译后的代码
+COPY dist/adapters/web-server-simple.js ./dist/adapters/
+COPY pages ./pages
+
+# 创建数据目录
+RUN mkdir -p data logs
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8080/api/health || exit 1
+
+# 启动命令
+CMD ["node", "dist/adapters/web-server-simple.js"]
