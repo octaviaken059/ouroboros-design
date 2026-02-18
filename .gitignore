@@ -1,43 +1,44 @@
-# Dependencies
-node_modules/
-package-lock.json
-
-# Build outputs
-dist/
-build/
-*.js
-*.js.map
-*.d.ts
-
-# Data and logs
-data/
+# 日志文件
 logs/
 *.log
 
-# Environment
+# 依赖目录
+node_modules/
+
+# 编译输出
+dist/
+build/
+*.tsbuildinfo
+
+# 测试覆盖率
+coverage/
+
+# 环境变量（敏感信息）
 .env
 .env.local
 .env.*.local
+
+# 数据目录（可能包含敏感信息）
+data/*.db
+data/*.json
+!data/.gitkeep
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
+# 操作系统
 .DS_Store
 Thumbs.db
 
-# Test coverage
-coverage/
-.nyc_output/
-
-# Temporary files
-tmp/
-temp/
+# 临时文件
 *.tmp
+.cache/
 
-# Backup files
-.backups/
-*.backup
+# 调试文件
+debug-*
+test-*
+temp-*

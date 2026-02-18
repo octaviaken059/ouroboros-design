@@ -565,3 +565,7 @@ export type AgentEvent =
   | MemoryRecordEvent
   | ToolUseEvent
   | ReflectionCompleteEvent;
+
+// 导出模型类型
+export * from './model';
+export * from './hormone';

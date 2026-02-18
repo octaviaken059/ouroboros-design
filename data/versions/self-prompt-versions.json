@@ -1,0 +1,161 @@
+[
+  {
+    "id": "f20fe8aa-6ab0-4802-96ce-fdace93e494a",
+    "timestamp": 1771330801470,
+    "content": {
+      "identity": {
+        "name": "Ouroboros",
+        "version": "1.0.0",
+        "description": "Test",
+        "createdAt": "2026-02-17T12:20:01.470Z"
+      },
+      "currentState": {
+        "mode": "serving",
+        "hormoneLevels": {
+          "adrenaline": 0.1,
+          "cortisol": 0.1,
+          "dopamine": 0.1,
+          "serotonin": 0.5,
+          "curiosity": 0.3
+        },
+        "bodyStatus": "healthy",
+        "activeTasks": 0,
+        "memoryStats": {
+          "total": 100,
+          "consolidated": 20
+        }
+      },
+      "responsibilities": [
+        "Assist user"
+      ],
+      "currentGoals": [
+        "Improve accuracy"
+      ],
+      "worldModel": {
+        "environment": "Node.js",
+        "constraints": [],
+        "capabilities": [],
+        "limitations": []
+      },
+      "availableTools": [],
+      "skills": [],
+      "preferences": {
+        "riskTolerance": 0.5,
+        "explorationRate": 0.3,
+        "verbosity": "balanced",
+        "proactivity": "balanced"
+      }
+    },
+    "performanceSnapshot": {
+      "avgSuccessRate": 0.85,
+      "avgTokenEfficiency": 0.8
+    },
+    "changeDescription": "Initial version"
+  },
+  {
+    "id": "483d4bf5-155c-4cfb-9e1b-83a7aafe15c7",
+    "timestamp": 1771330801470,
+    "content": {
+      "identity": {
+        "name": "Ouroboros",
+        "version": "1.0.0",
+        "description": "Test",
+        "createdAt": "2026-02-17T12:20:01.470Z"
+      },
+      "currentState": {
+        "mode": "serving",
+        "hormoneLevels": {
+          "adrenaline": 0.1,
+          "cortisol": 0.1,
+          "dopamine": 0.1,
+          "serotonin": 0.5,
+          "curiosity": 0.3
+        },
+        "bodyStatus": "healthy",
+        "activeTasks": 0,
+        "memoryStats": {
+          "total": 100,
+          "consolidated": 20
+        }
+      },
+      "responsibilities": [
+        "Assist user"
+      ],
+      "currentGoals": [
+        "Improve accuracy"
+      ],
+      "worldModel": {
+        "environment": "Node.js",
+        "constraints": [],
+        "capabilities": [],
+        "limitations": []
+      },
+      "availableTools": [],
+      "skills": [],
+      "preferences": {
+        "riskTolerance": 0.7,
+        "explorationRate": 0.3,
+        "verbosity": "balanced",
+        "proactivity": "balanced"
+      }
+    },
+    "performanceSnapshot": {
+      "avgSuccessRate": 0.75,
+      "avgTokenEfficiency": 0.75
+    },
+    "changeDescription": "Increased risk tolerance"
+  },
+  {
+    "id": "8006c665-3126-4562-8663-6d16201485fe",
+    "timestamp": 1771330801470,
+    "content": {
+      "identity": {
+        "name": "Ouroboros",
+        "version": "1.0.0",
+        "description": "Test",
+        "createdAt": "2026-02-17T12:20:01.470Z"
+      },
+      "currentState": {
+        "mode": "serving",
+        "hormoneLevels": {
+          "adrenaline": 0.1,
+          "cortisol": 0.1,
+          "dopamine": 0.1,
+          "serotonin": 0.5,
+          "curiosity": 0.3
+        },
+        "bodyStatus": "healthy",
+        "activeTasks": 0,
+        "memoryStats": {
+          "total": 100,
+          "consolidated": 20
+        }
+      },
+      "responsibilities": [
+        "Assist user"
+      ],
+      "currentGoals": [
+        "Improve accuracy"
+      ],
+      "worldModel": {
+        "environment": "Node.js",
+        "constraints": [],
+        "capabilities": [],
+        "limitations": []
+      },
+      "availableTools": [],
+      "skills": [],
+      "preferences": {
+        "riskTolerance": 0.7,
+        "explorationRate": 0.6,
+        "verbosity": "balanced",
+        "proactivity": "balanced"
+      }
+    },
+    "performanceSnapshot": {
+      "avgSuccessRate": 0.65,
+      "avgTokenEfficiency": 0.7
+    },
+    "changeDescription": "Increased exploration rate"
+  }
+]

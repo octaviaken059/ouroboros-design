@@ -1,34 +1,30 @@
 {
   "name": "ouroboros",
-  "version": "1.0.0",
-  "description": "🐍⭕ Embodied Self-Referential Evolving AI Agent",
-  "main": "dist/agent.js",
+  "version": "2.0.0",
+  "description": "🐍⭕ 自我进化型 AI Agent - P0 重构版",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch & node --watch dist/agent.js web",
-    "start": "node dist/agent.js",
-    "cli": "node dist/agent.js cli",
-    "web": "node dist/agent.js web",
-    "tui": "node dist/agent.js tui",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
-    "test:e2e": "jest tests/e2e",
-    "db:migrate": "node scripts/migrate.js",
-    "clean": "rm -rf dist data/*.json",
-    "docker:build": "docker build -t ouroboros:latest .",
-    "docker:run": "docker run -d -p 8080:8080 --name ouroboros ouroboros:latest",
-    "docker:stop": "docker stop ouroboros && docker rm ouroboros",
-    "lint": "echo \"Linting not yet configured\" && exit 0"
+    "lint": "eslint src/ tests/ --ext .ts",
+    "lint:fix": "eslint src/ tests/ --ext .ts --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "clean": "rm -rf dist logs/*.log",
+    "prepare": "husky install"
   },
   "keywords": [
     "ai",
     "agent",
-    "embodied",
-    "self-referential",
+    "self-evolving",
     "bayesian",
     "memory",
     "homeostasis",
@@ -37,36 +33,34 @@
   "author": "Ouroboros Team",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/compression": "^1.8.1",
-    "@types/cors": "^2.8.19",
-    "@types/helmet": "^0.0.48",
-    "@types/jest": "^29.5.0",
-    "@types/node": "^20.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.4",
+    "@typescript-eslint/eslint-plugin": "^8.24.1",
+    "@typescript-eslint/parser": "^8.24.1",
+    "eslint": "^9.20.1",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
-    "ts-jest": "^29.1.0",
-    "typescript": "^5.0.0"
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.1",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/ouroboros.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/ouroboros/issues"
-  },
-  "homepage": "https://github.com/yourusername/ouroboros#readme",
   "dependencies": {
     "better-sqlite3": "^12.6.2",
-    "compression": "^1.8.1",
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "helmet": "^8.1.0",
+    "dotenv": "^16.4.7",
+    "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
-    "ws": "^8.19.0",
     "zod": "^3.25.76"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   }
 }
