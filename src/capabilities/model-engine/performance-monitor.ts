@@ -7,6 +7,7 @@
 
 import type { PerformanceMetrics } from '@/types/model';
 import { createContextLogger } from '@/utils/logger';
+import { getConfig } from '@/config';
 
 const logger = createContextLogger('PerformanceMonitor');
 
@@ -50,11 +51,12 @@ export class PerformanceMonitor {
 
   /**
    * 创建性能监控器
-   * @param maxRecords 最大记录数
+   * @param maxRecords 最大记录数（可选，不传则使用全局配置）
    */
-  constructor(maxRecords = 1000) {
-    this.maxRecords = maxRecords;
-    logger.info('性能监控器初始化完成', { maxRecords });
+  constructor(maxRecords?: number) {
+    const config = getConfig();
+    this.maxRecords = maxRecords ?? config.model.performanceMonitorMaxRecords;
+    logger.info('性能监控器初始化完成', { maxRecords: this.maxRecords });
   }
 
   /**

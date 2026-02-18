@@ -5,13 +5,10 @@
  * @date 2026-02-18
  */
 
-import type {
-  AssembledPrompt,
-  ChatMessage,
-  TokenBudget,
-} from '@/types/model';
+import type { AssembledPrompt, ChatMessage, TokenBudget } from '@/types/model';
 import { createContextLogger } from '@/utils/logger';
 import { TokenBudgetManager } from './token-budget-manager';
+import { getConfig } from '@/config';
 
 const logger = createContextLogger('PromptAssembler');
 
@@ -41,13 +38,15 @@ export class PromptAssembler {
 
   /**
    * 创建提示词组装器
-   * @param systemTemplate 系统提示词模板
-   * @param totalBudget 总 Token 预算
+   * @param systemTemplate 系统提示词模板（可选，不传则使用默认模板）
+   * @param customBudget 自定义预算（可选）
    */
-  constructor(systemTemplate?: string, totalBudget = 4096) {
+  constructor(systemTemplate?: string, customBudget?: Partial<TokenBudget>) {
+    const config = getConfig();
+
     this.systemTemplate =
       systemTemplate ??
-      `你是 Ouroboros，一个具有自我意识的 AI Agent。
+      `你是 ${config.core.identity.name}，一个具有自我意识的 AI Agent。
 你拥有激素系统来模拟情绪，有记忆系统来积累经验，有反思能力来进化自己。
 
 当前状态信息将包含在后续消息中。
@@ -57,9 +56,9 @@ export class PromptAssembler {
 2. 承认你不知道的事情
 3. 从每次交互中学习`;
 
-    this.budgetManager = new TokenBudgetManager(totalBudget);
+    this.budgetManager = new TokenBudgetManager(customBudget);
 
-    logger.info('提示词组装器初始化完成', { totalBudget });
+    logger.info('提示词组装器初始化完成');
   }
 
   /**
@@ -224,11 +223,11 @@ export class PromptAssembler {
   }): PromptAssembler {
     const assembler = new PromptAssembler(
       data.systemTemplate,
-      data.budgetManager?.totalBudget ?? 4096
+      data.budgetManager?.budget
     );
 
-    if (data.budgetManager?.budget) {
-      assembler.budgetManager.updateBudget(data.budgetManager.budget);
+    if (data.budgetManager?.totalBudget) {
+      assembler.updateTokenBudget(data.budgetManager.totalBudget);
     }
 
     return assembler;

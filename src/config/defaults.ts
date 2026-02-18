@@ -1,0 +1,142 @@
+/**
+ * @file config/defaults.ts
+ * @description 默认配置
+ * @author Ouroboros
+ * @date 2026-02-18
+ */
+
+import type { OuroborosConfig } from './types';
+
+/**
+ * 默认配置
+ */
+export const DEFAULT_CONFIG: OuroborosConfig = {
+  version: '2.0.0',
+
+  core: {
+    identity: {
+      name: 'Ouroboros',
+      version: '2.0.0',
+      description: '具有自我意识的 AI Agent，能够感知自身状态、积累经验并持续进化',
+      creator: 'Ken',
+    },
+    selfDescriptionIntervalMs: 5000,
+    cognitiveDecayRate: 0.01,
+  },
+
+  hormone: {
+    baselineLevels: {
+      dopamine: 50,
+      serotonin: 50,
+      cortisol: 20,
+      oxytocin: 40,
+      norepinephrine: 30,
+    },
+    decayRates: {
+      dopamine: 0.05,
+      serotonin: 0.03,
+      cortisol: 0.1,
+      oxytocin: 0.02,
+      norepinephrine: 0.08,
+    },
+    maxLevels: {
+      dopamine: 100,
+      serotonin: 100,
+      cortisol: 100,
+      oxytocin: 100,
+      norepinephrine: 100,
+    },
+    minLevels: {
+      dopamine: 0,
+      serotonin: 0,
+      cortisol: 0,
+      oxytocin: 0,
+      norepinephrine: 0,
+    },
+    updateIntervalMs: 1000,
+    triggerCheckIntervalMs: 500,
+  },
+
+  model: {
+    defaultModel: {
+      provider: 'ollama',
+      model: 'deepseek-r1:8b',
+      baseUrl: 'http://localhost:11434',
+      temperature: 0.7,
+      maxTokens: 2048,
+      timeoutMs: 60000,
+    },
+    fallbackModel: undefined,
+    tokenBudget: {
+      system: 0.2,
+      self: 0.4,
+      memory: 0.3,
+      user: 0.1,
+    },
+    totalTokenBudget: 4096,
+    maxRetries: 3,
+    retryDelayMs: 1000,
+    performanceMonitorMaxRecords: 1000,
+  },
+
+  memory: {
+    shortTermCapacity: 50,
+    longTermStorageDir: './data/memory',
+    consolidationThreshold: 0.7,
+    forgettingRate: 0.01,
+    vectorStore: {
+      enabled: true,
+      dimension: 768,
+      similarityThreshold: 0.7,
+    },
+  },
+
+  tool: {
+    timeoutMs: 30000,
+    initialConfidence: 0.5,
+    confidenceLearningRate: 0.1,
+    enabledTools: [],
+    disabledTools: [],
+  },
+
+  safety: {
+    dualMindEnabled: true,
+    hardwareWatchdogEnabled: false,
+    identityAnchorIntervalMs: 60000,
+    maxConsecutiveErrors: 5,
+    godelImmunityEnabled: true,
+  },
+
+  evolution: {
+    heartbeatIntervalMs: 300000, // 5分钟
+    deepEvolutionIntervalMs: 3600000, // 1小时
+    reflectionThreshold: 0.8,
+    abTestingEnabled: true,
+    learningQueueMaxSize: 100,
+  },
+
+  log: {
+    level: 'info',
+    outputDir: './logs',
+    consoleOutput: true,
+    fileOutput: true,
+    retentionDays: 30,
+  },
+
+  adapter: {
+    web: {
+      enabled: true,
+      port: 8080,
+      host: '0.0.0.0',
+      corsOrigins: ['*'],
+    },
+    mcp: {
+      enabled: false,
+      serverName: 'ouroboros-mcp',
+    },
+    websocket: {
+      enabled: false,
+      port: 8081,
+    },
+  },
+};

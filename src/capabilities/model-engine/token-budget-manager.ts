@@ -6,9 +6,9 @@
  */
 
 import type { TokenBudget, BudgetAllocation } from '@/types/model';
-import { DEFAULT_TOKEN_BUDGET } from '@/types/model';
 import { createContextLogger } from '@/utils/logger';
 import { ConfigError, tryCatch } from '@/utils/error';
+import { getConfig } from '@/config';
 
 const logger = createContextLogger('TokenBudgetManager');
 
@@ -33,20 +33,27 @@ export class TokenBudgetManager {
   private usageHistory: TokenUsage[] = [];
   /** 总预算 */
   private totalBudget: number;
+  /** 最大记录数 */
+  private maxHistorySize: number;
 
   /**
    * 创建 Token 预算管理器
-   * @param totalBudget 总 Token 预算
-   * @param budget 预算分配比例
+   * @param customBudget 自定义预算（可选，不传则使用全局配置）
+   * @param customTotalBudget 自定义总预算（可选）
    */
-  constructor(totalBudget = 4096, budget?: Partial<TokenBudget>) {
-    this.totalBudget = totalBudget;
-    this.budget = { ...DEFAULT_TOKEN_BUDGET, ...budget };
+  constructor(customBudget?: Partial<TokenBudget>, customTotalBudget?: number) {
+    const config = getConfig();
+
+    this.totalBudget = customTotalBudget ?? config.model.totalTokenBudget;
+    this.budget = customBudget
+      ? { ...config.model.tokenBudget, ...customBudget }
+      : config.model.tokenBudget;
+    this.maxHistorySize = 100;
 
     this.validateBudget();
 
     logger.info('Token预算管理器初始化完成', {
-      totalBudget,
+      totalBudget: this.totalBudget,
       allocation: this.budget,
     });
   }
@@ -102,7 +109,10 @@ export class TokenBudgetManager {
    */
   updateTotalBudget(totalBudget: number): void {
     if (totalBudget <= 0) {
-      throw new ConfigError('总预算必须大于0', 'TokenBudgetManager.updateTotalBudget');
+      throw new ConfigError(
+        '总预算必须大于0',
+        'TokenBudgetManager.updateTotalBudget'
+      );
     }
 
     this.totalBudget = totalBudget;
@@ -116,8 +126,8 @@ export class TokenBudgetManager {
   recordUsage(usage: TokenUsage): void {
     this.usageHistory.push(usage);
 
-    // 保留最近100条记录
-    if (this.usageHistory.length > 100) {
+    // 保留最近N条记录
+    if (this.usageHistory.length > this.maxHistorySize) {
       this.usageHistory.shift();
     }
 
@@ -198,8 +208,8 @@ export class TokenBudgetManager {
     historyCount: number;
   } {
     const avgUsage = this.getAverageUsage();
-    const utilizationRate = this.totalBudget > 0 
-      ? (avgUsage.total / this.totalBudget) * 100 
+    const utilizationRate = this.totalBudget > 0
+      ? (avgUsage.total / this.totalBudget) * 100
       : 0;
 
     return {
@@ -256,7 +266,7 @@ export class TokenBudgetManager {
     totalBudget: number;
     usageHistory: TokenUsage[];
   }): TokenBudgetManager {
-    const manager = new TokenBudgetManager(data.totalBudget, data.budget);
+    const manager = new TokenBudgetManager(data.budget, data.totalBudget);
     manager.usageHistory = [...data.usageHistory];
     return manager;
   }

@@ -230,6 +230,14 @@ export class CognitiveStateManager {
   }
 
   /**
+   * 获取当前状态
+   * @returns 认知状态
+   */
+  getState(): CognitiveState {
+    return { ...this.state };
+  }
+
+  /**
    * 生成认知状态描述
    * @returns 描述文本
    */

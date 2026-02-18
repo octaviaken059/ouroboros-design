@@ -17,6 +17,7 @@ import type {
 } from '@/types/model';
 import { createContextLogger } from '@/utils/logger';
 import { ModelError, tryCatchAsync } from '@/utils/error';
+import { getConfig } from '@/config';
 
 const logger = createContextLogger('ModelClient');
 
@@ -28,35 +29,29 @@ export class ModelClient {
   /** 配置 */
   private config: ModelConfig;
   /** 重试次数 */
-  private maxRetries = 3;
+  private maxRetries: number;
   /** 重试延迟(毫秒) */
-  private retryDelayMs = 1000;
+  private retryDelayMs: number;
 
   /**
    * 创建模型客户端
-   * @param config 模型配置
+   * @param customConfig 自定义模型配置（可选，不传则使用全局配置）
    */
-  constructor(config?: Partial<ModelConfig>) {
-    this.config = { ...this.getDefaultConfig(), ...config };
+  constructor(customConfig?: Partial<ModelConfig>) {
+    const globalConfig = getConfig();
+
+    this.config = customConfig
+      ? { ...globalConfig.model.defaultModel, ...customConfig }
+      : globalConfig.model.defaultModel;
+
+    this.maxRetries = globalConfig.model.maxRetries;
+    this.retryDelayMs = globalConfig.model.retryDelayMs;
+
     logger.info('模型客户端初始化完成', {
       provider: this.config.provider,
       model: this.config.model,
+      maxRetries: this.maxRetries,
     });
-  }
-
-  /**
-   * 获取默认配置
-   * @returns 默认配置
-   */
-  private getDefaultConfig(): ModelConfig {
-    return {
-      provider: 'ollama',
-      model: 'deepseek-r1:8b',
-      baseUrl: 'http://localhost:11434',
-      temperature: 0.7,
-      maxTokens: 2048,
-      timeoutMs: 60000,
-    };
   }
 
   /**
@@ -248,7 +243,7 @@ export class ModelClient {
 
     const data = (await response.json()) as OpenAIResponse;
 
-    return {
+    const result: ModelResponse = {
       content: data.choices[0]?.message?.content ?? '',
       tokens: {
         prompt: data.usage?.prompt_tokens ?? 0,
@@ -258,6 +253,8 @@ export class ModelClient {
       model: this.config.model,
       responseTimeMs: 0, // 由上层填充
     };
+
+    return result;
   }
 
   /**
