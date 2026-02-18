@@ -8,12 +8,9 @@
 import { mkdirSync, existsSync } from 'fs';
 import { dirname } from 'path';
 import { createContextLogger } from '@/utils/logger';
+import Database from 'better-sqlite3';
 
 const logger = createContextLogger('Database');
-
-// 使用 require 避免类型问题
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const Database = require('better-sqlite3');
 
 /** 数据库连接实例 */
 let dbInstance: unknown | null = null;
