@@ -48,6 +48,7 @@ function setupNavigation() {
       if (tab === 'monitor') loadStatus();
       if (tab === 'memory') loadMemoryStats();
       if (tab === 'bayesian') loadBayesianTools();
+      if (tab === 'debug') loadDebugInfo();
     });
   });
 }
@@ -86,6 +87,10 @@ async function sendMessage() {
     
     if (data.success) {
       addMessage('system', data.data.content);
+      // 刷新调试信息
+      if (currentTab === 'debug') {
+        loadDebugInfo();
+      }
     } else {
       addMessage('system', `错误: ${data.error}`);
     }
@@ -291,6 +296,55 @@ function getConfidenceColor(confidence) {
   if (confidence >= 0.7) return 'var(--success)';
   if (confidence >= 0.4) return 'var(--warning)';
   return 'var(--danger)';
+}
+
+// 加载调试信息
+async function loadDebugInfo() {
+  try {
+    const response = await fetch(`${API_BASE}/api/debug/last-prompt`);
+    const data = await response.json();
+    
+    if (data.success && data.data) {
+      updateDebugInfo(data.data);
+    }
+  } catch (error) {
+    console.error('加载调试信息失败:', error);
+  }
+}
+
+function updateDebugInfo(debugInfo) {
+  // 系统提示词
+  document.getElementById('debug-system').innerHTML = 
+    `<code>${escapeHtml(debugInfo.systemPrompt || '无')}</code>`;
+  
+  // 记忆上下文
+  document.getElementById('debug-memory').innerHTML = 
+    `<code>${escapeHtml(debugInfo.memoryContext || '无')}</code>`;
+  
+  // 自我描述
+  document.getElementById('debug-self').innerHTML = 
+    `<code>${escapeHtml(JSON.stringify(debugInfo.selfDescription, null, 2))}</code>`;
+  
+  // 消息列表
+  const messagesStr = JSON.stringify(debugInfo.messages, null, 2);
+  document.getElementById('debug-messages').innerHTML = 
+    `<code>${escapeHtml(messagesStr)}</code>`;
+  
+  // Token 统计 (估算)
+  const systemTokens = Math.ceil((debugInfo.systemPrompt?.length || 0) / 3);
+  const memoryTokens = Math.ceil((debugInfo.memoryContext?.length || 0) / 3);
+  const userTokens = debugInfo.messages?.find(m => m.role === 'user')?.content?.length 
+    ? Math.ceil(debugInfo.messages.find(m => m.role === 'user').content.length / 3)
+    : 0;
+  
+  document.getElementById('debug-token-system').textContent = systemTokens;
+  document.getElementById('debug-token-memory').textContent = memoryTokens;
+  document.getElementById('debug-token-user').textContent = userTokens;
+  document.getElementById('debug-token-total').textContent = systemTokens + memoryTokens + userTokens;
+  
+  // 时间戳
+  document.getElementById('debug-timestamp').textContent = 
+    new Date(debugInfo.timestamp).toLocaleString('zh-CN');
 }
 
 // 连接状态

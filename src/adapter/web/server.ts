@@ -157,6 +157,17 @@ export class WebServer {
       return;
     }
 
+    // GET /api/debug/last-prompt - 获取最后提示词
+    if (url === '/api/debug/last-prompt' && method === 'GET') {
+      const debugInfo = this.agent.getLastDebugInfo();
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        success: true,
+        data: debugInfo || null,
+      }));
+      return;
+    }
+
     // GET /api/bayesian/tools - 获取工具置信度
     if (url === '/api/bayesian/tools' && method === 'GET') {
       const bayesianCore = this.agent.getBayesianCore();

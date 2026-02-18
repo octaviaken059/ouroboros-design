@@ -499,6 +499,48 @@ body {
   color: var(--primary);
 }
 
+.debug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.code-block {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.code-block code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e6edf3;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 语法高亮 */
+.code-block .key {
+  color: #7ee787;
+}
+
+.code-block .string {
+  color: #a5d6ff;
+}
+
+.code-block .number {
+  color: #79c0ff;
+}
+
+.code-block .boolean {
+  color: #ff7b72;
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .sidebar {

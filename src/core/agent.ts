@@ -106,6 +106,16 @@ export class OuroborosAgent {
   // Web 服务器
   private webServer?: WebServer | undefined;
   private webEnabled = true;
+  
+  // 调试信息
+  private lastDebugInfo?: {
+    timestamp: string;
+    systemPrompt: string;
+    messages: unknown[];
+    assembledPrompt: unknown;
+    memoryContext: string;
+    selfDescription: unknown;
+  };
 
   /**
    * 创建 Agent 实例（工厂方法）
@@ -427,6 +437,16 @@ export class OuroborosAgent {
       // 5. 创建消息列表
       const messages = this.promptAssembler.createMessages(prompt);
       
+      // 记录调试信息
+      this.lastDebugInfo = {
+        timestamp: new Date().toISOString(),
+        systemPrompt: prompt.system,
+        messages: messages,
+        assembledPrompt: prompt,
+        memoryContext: memoryContext.contextText,
+        selfDescription: selfDescription,
+      };
+      
       // 6. 调用模型（自动支持备用模型切换）
       const response = await this.modelClient.chat(messages);
       
@@ -596,6 +616,13 @@ export class OuroborosAgent {
    */
   getBayesianCore(): BayesianCore {
     return this.bayesianCore;
+  }
+
+  /**
+   * 获取最后调试信息
+   */
+  getLastDebugInfo(): typeof this.lastDebugInfo {
+    return this.lastDebugInfo;
   }
 
   /**
