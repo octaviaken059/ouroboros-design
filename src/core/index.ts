@@ -11,5 +11,8 @@ export * from './self-description';
 // 导出记忆系统
 export * from './memory';
 
+// 导出贝叶斯核心
+export * from './bayesian';
+
 // 导出 Agent 主类
 export { OuroborosAgent, type AgentOptions, type AgentStatus } from './agent';
