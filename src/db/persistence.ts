@@ -17,7 +17,7 @@ const logger = createContextLogger('Persistence');
 export function saveConfigToDb(config: OuroborosConfig): void {
   const configJson = JSON.stringify(config);
   run(
-    'INSERT OR REPLACE INTO config (key, value, updated_at) VALUES (?, ?, datetime("now"))',
+    "INSERT OR REPLACE INTO config (key, value, updated_at) VALUES (?, ?, datetime('now'))",
     ['agent_config', configJson]
   );
   logger.debug('配置已保存到数据库');
@@ -61,7 +61,7 @@ export function saveAgentState(state: {
   run(
     `INSERT OR REPLACE INTO agent_state 
      (id, identity, body, world_model, cognitive_state, tool_set, hormones, performance_monitor, message_count, updated_at)
-     VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))`,
+     VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
     [
       JSON.stringify(state.identity),
       JSON.stringify(state.body),
