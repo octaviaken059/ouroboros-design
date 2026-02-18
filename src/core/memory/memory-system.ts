@@ -18,6 +18,12 @@ import type {
 } from '@/types/memory';
 import { MemoryStore } from './memory-store';
 import { EmbeddingService } from './embedding-service';
+import {
+  calculateSalience,
+  shouldForget,
+  shouldConsolidate,
+  evaluateMemoriesSalience,
+} from './ebbinghaus-forgetting';
 import { createContextLogger } from '@/utils/logger';
 import { getConfig } from '@/config';
 
@@ -471,5 +477,151 @@ export class MemorySystem {
    */
   getStore(): MemoryStore {
     return this.store;
+  }
+
+  // ============================================================================
+  // 艾宾浩斯遗忘曲线 - 情景记忆管理
+  // ============================================================================
+
+  /**
+   * 应用遗忘曲线，评估记忆显著性
+   * @param memory 记忆对象
+   * @returns 显著性分数 (0-1)
+   */
+  evaluateSalience(memory: AnyMemory): number {
+    // 反思记忆不遗忘
+    if (memory.type === 'reflective') {
+      return Math.max(0.8, memory.importance);
+    }
+
+    // 语义/程序记忆使用贝叶斯置信度（Phase 4实现）
+    if (memory.type === 'semantic' || memory.type === 'procedural') {
+      return memory.confidence;
+    }
+
+    // 情景记忆使用艾宾浩斯遗忘曲线
+    const hoursPassed =
+      (Date.now() - new Date(memory.lastAccessedAt).getTime()) /
+      (1000 * 60 * 60);
+    const reviewCount = Math.floor(memory.accessCount / 2);
+
+    return calculateSalience(
+      memory.importance,
+      hoursPassed,
+      memory.accessCount,
+      reviewCount
+    );
+  }
+
+  /**
+   * 检查记忆是否应该被遗忘
+   * @param memory 记忆对象
+   * @param threshold 遗忘阈值
+   * @returns 是否应该遗忘
+   */
+  shouldMemoryBeForgotten(
+    memory: AnyMemory,
+    threshold = 0.1
+  ): boolean {
+    const salience = this.evaluateSalience(memory);
+    return shouldForget(salience, threshold);
+  }
+
+  /**
+   * 巩固符合条件的记忆
+   * @returns 被巩固的记忆列表
+   */
+  consolidateMemories(): AnyMemory[] {
+    const episodicMemories = this.store.query({
+      type: 'episodic',
+    }) as EpisodicMemory[];
+
+    const consolidated: AnyMemory[] = [];
+
+    for (const memory of episodicMemories) {
+      if (
+        shouldConsolidate(
+          memory.createdAt,
+          memory.accessCount,
+          memory.lastAccessedAt
+        )
+      ) {
+        // 提升重要性并标记为已巩固
+        this.store.update(memory.id, {
+          importance: Math.min(1, memory.importance + 0.2),
+          tags: [...memory.tags, 'consolidated'],
+        });
+        consolidated.push(memory);
+      }
+    }
+
+    if (consolidated.length > 0) {
+      logger.info('记忆已巩固', { count: consolidated.length });
+    }
+
+    return consolidated;
+  }
+
+  /**
+   * 清理低显著性记忆（遗忘）
+   * @param threshold 遗忘阈值
+   * @returns 被清理的记忆数量
+   */
+  pruneMemories(threshold = 0.1): number {
+    const allMemories = this.store.getAll();
+    let prunedCount = 0;
+
+    for (const memory of allMemories) {
+      if (this.shouldMemoryBeForgotten(memory, threshold)) {
+        this.store.delete(memory.id);
+        prunedCount++;
+      }
+    }
+
+    if (prunedCount > 0) {
+      logger.info('低显著性记忆已清理', { count: prunedCount });
+    }
+
+    return prunedCount;
+  }
+
+  /**
+   * 获取记忆显著性报告
+   * @returns 记忆显著性评估
+   */
+  getSalienceReport(): {
+    total: number;
+    highSalience: number;
+    mediumSalience: number;
+    lowSalience: number;
+    shouldForget: number;
+  } {
+    const allMemories = this.store.getAll();
+    const evaluations = evaluateMemoriesSalience(
+      allMemories.map((m) => ({
+        id: m.id,
+        importance: m.importance,
+        createdAt: m.createdAt,
+        lastAccessedAt: m.lastAccessedAt,
+        accessCount: m.accessCount,
+      }))
+    );
+
+    const highSalience = evaluations.filter((e) => e.salience >= 0.7).length;
+    const mediumSalience = evaluations.filter(
+      (e) => e.salience >= 0.3 && e.salience < 0.7
+    ).length;
+    const lowSalience = evaluations.filter(
+      (e) => e.salience < 0.3 && !e.shouldForget
+    ).length;
+    const shouldForget = evaluations.filter((e) => e.shouldForget).length;
+
+    return {
+      total: allMemories.length,
+      highSalience,
+      mediumSalience,
+      lowSalience,
+      shouldForget,
+    };
   }
 }

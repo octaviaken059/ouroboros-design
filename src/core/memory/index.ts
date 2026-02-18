@@ -8,3 +8,11 @@
 export { MemorySystem } from './memory-system';
 export { MemoryStore } from './memory-store';
 export { EmbeddingService, getEmbeddingService } from './embedding-service';
+export {
+  calculateRetentionRate,
+  calculateSalience,
+  shouldForget,
+  calculateNextReviewInterval,
+  shouldConsolidate,
+  EbbinghausForgettingCurve,
+} from './ebbinghaus-forgetting';
