@@ -122,3 +122,12 @@ export * from './body';
 export * from './world-model';
 export * from './cognitive-state';
 export * from './tool-set';
+
+// 导出世界模型增强器
+export {
+  WorldModelEnhancer,
+  type CausalRelation,
+  type PredictionModel,
+  type Prediction,
+  type Scenario,
+} from './world-model-enhancer';

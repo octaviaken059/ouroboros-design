@@ -334,6 +334,10 @@ export interface Tool {
   status: 'available' | 'unavailable' | 'error';
   /** 加载优先级 */
   priority: 'critical' | 'high' | 'medium' | 'low' | 'on_demand';
+  /** 参数定义 */
+  parameters?: Record<string, { type: string; required: boolean; description: string }>;
+  /** 执行函数 */
+  execute?: (args: Record<string, unknown>) => Promise<unknown>;
 }
 
 // ============================================================================
@@ -569,3 +573,4 @@ export type AgentEvent =
 // 导出模型类型
 export * from './model';
 export * from './hormone';
+export * from './mcp';

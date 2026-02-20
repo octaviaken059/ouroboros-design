@@ -44,6 +44,31 @@ export interface HormoneConfig {
 }
 
 /**
+ * 提示词系统配置
+ */
+export interface PromptsConfig {
+  /** 系统提示词 */
+  system: {
+    template: string;
+    readOnly: boolean;
+  };
+  /** 自我提示词 */
+  self: {
+    identityTemplate: string;
+    capabilityTemplate: string;
+    stateTemplate: string;
+    optimizable: boolean;
+  };
+  /** 记忆提示词 */
+  memory: {
+    maxContextMemories: number;
+    includeRecentConversation: boolean;
+    includeRelevantFacts: boolean;
+    dynamicAssembly: boolean;
+  };
+}
+
+/**
  * 模型引擎配置
  */
 export interface ModelEngineConfig {
@@ -82,21 +107,103 @@ export interface MemoryConfig {
   /** 向量存储配置 */
   vectorStore: {
     enabled: boolean;
+    provider: 'ollama' | 'openai' | 'none';
+    model: string;
     dimension: number;
+    baseUrl: string;
     similarityThreshold: number;
+    maxResults: number;
   };
   /** 检索配置 */
   retrieval: {
-    /** 默认返回记忆数量 */
     defaultLimit: number;
-    /** 最大返回记忆数量 */
     maxLimit: number;
-    /** 语义检索权重 */
     semanticWeight: number;
-    /** 时间衰减权重 */
     temporalWeight: number;
-    /** 重要性权重 */
     importanceWeight: number;
+    keywordSearchEnabled: boolean;
+    vectorSearchEnabled: boolean;
+  };
+  /** 导入导出配置 */
+  importExport: {
+    allowedFormats: string[];
+    maxExportSize: number;
+    includeEmbeddings: boolean;
+  };
+}
+
+/**
+ * 身体图式配置
+ */
+export interface BodySchemaConfig {
+  sensors: {
+    enabled: string[];
+    updateIntervalMs: number;
+    filesystem: {
+      watchPaths: string[];
+      maxDepth: number;
+    };
+    network: {
+      checkConnectivity: boolean;
+      monitorInterfaces: boolean;
+    };
+    process: {
+      monitorSelf: boolean;
+      checkIntervalMs: number;
+    };
+    system_resources: {
+      cpuThreshold: number;
+      memoryThreshold: number;
+      diskThreshold: number;
+    };
+  };
+  actuators: {
+    enabled: string[];
+    timeoutMs: number;
+    maxConcurrent: number;
+    file_write: {
+      allowedPaths: string[];
+      maxFileSize: number;
+    };
+    exec_command: {
+      allowedCommands: string[];
+      blockedPatterns: string[];
+    };
+    http_request: {
+      timeoutMs: number;
+      maxRedirects: number;
+      allowedProtocols: string[];
+    };
+  };
+  resourceMonitor: {
+    enabled: boolean;
+    checkIntervalMs: number;
+    alertThresholds: {
+      cpu: number;
+      memory: number;
+      disk: number;
+    };
+  };
+}
+
+/**
+ * 世界模型配置
+ */
+export interface WorldModelConfig {
+  patternRecognition: {
+    enabled: boolean;
+    minConfidence: number;
+    maxPatterns: number;
+  };
+  riskManagement: {
+    enabled: boolean;
+    autoEscalate: boolean;
+    maxActiveRisks: number;
+  };
+  opportunityDetection: {
+    enabled: boolean;
+    minPotential: number;
+    maxOpportunities: number;
   };
 }
 
@@ -104,82 +211,152 @@ export interface MemoryConfig {
  * 工具系统配置
  */
 export interface ToolConfig {
-  /** 工具超时时间(毫秒) */
+  discovery: {
+    enabled: boolean;
+    scanIntervalMs: number;
+    scanPaths: string[];
+    mcpServers: {
+      enabled: boolean;
+      configPath: string;
+    };
+  };
+  confidence: {
+    initialValue: number;
+    learningRate: number;
+    minConfidence: number;
+    maxConfidence: number;
+  };
   timeoutMs: number;
-  /** 工具置信度初始值 */
-  initialConfidence: number;
-  /** 工具置信度学习率 */
-  confidenceLearningRate: number;
-  /** 启用/禁用的工具列表 */
   enabledTools: string[];
   disabledTools: string[];
+}
+
+/**
+ * 技能系统配置
+ */
+export interface SkillsConfig {
+  mastery: {
+    noviceThreshold: number;
+    intermediateThreshold: number;
+    advancedThreshold: number;
+    expertThreshold: number;
+  };
+  learning: {
+    successXpGain: number;
+    failureXpGain: number;
+    complexityMultiplier: number;
+  };
 }
 
 /**
  * 安全系统配置
  */
 export interface SafetyConfig {
-  /** 双思维验证启用 */
   dualMindEnabled: boolean;
-  /** 硬件看门狗启用 */
   hardwareWatchdogEnabled: boolean;
-  /** 身份锚定检查间隔(毫秒) */
   identityAnchorIntervalMs: number;
-  /** 最大连续错误次数 */
   maxConsecutiveErrors: number;
-  /** 哥德尔免疫启用 */
   godelImmunityEnabled: boolean;
+  selfReferenceProtection: {
+    codeModificationRequiresApproval: boolean;
+    maxModificationSize: number;
+    blockedPatterns: string[];
+  };
 }
 
 /**
  * 进化系统配置
  */
 export interface EvolutionConfig {
-  /** 心跳间隔(毫秒) */
   heartbeatIntervalMs: number;
-  /** 深度进化触发间隔(毫秒) */
   deepEvolutionIntervalMs: number;
-  /** 自我反思触发阈值 */
   reflectionThreshold: number;
-  /** A/B 测试启用 */
-  abTestingEnabled: boolean;
-  /** 学习队列最大长度 */
+  abTesting: {
+    enabled: boolean;
+    minSamples: number;
+    confidenceLevel: number;
+    maxConcurrentTests: number;
+  };
   learningQueueMaxSize: number;
+}
+
+/**
+ * 反思引擎配置
+ */
+export interface ReflectionConfig {
+  enabled: boolean;
+  mode: 'auto' | 'conservative' | 'human' | 'semi_autonomous';
+  scheduleIntervalMs: number;
+  performanceThreshold: number;
+  maxInsights: number;
+  autoExecuteLowRisk: boolean;
+  triggers: {
+    scheduled: boolean;
+    performanceDrop: boolean;
+    anomalyDetected: boolean;
+    toolDiscovered: boolean;
+    userRequest: boolean;
+  };
 }
 
 /**
  * 日志配置
  */
 export interface LogConfig {
-  /** 日志级别 */
   level: 'debug' | 'info' | 'warn' | 'error';
-  /** 日志输出目录 */
   outputDir: string;
-  /** 是否输出到控制台 */
   consoleOutput: boolean;
-  /** 是否输出到文件 */
   fileOutput: boolean;
-  /** 日志保留天数 */
   retentionDays: number;
+  errorMonitoring: {
+    enabled: boolean;
+    alertThreshold: number;
+    alertIntervalMs: number;
+  };
 }
 
 /**
  * 适配器配置
  */
 export interface AdapterConfig {
-  /** Web 服务配置 */
   web: {
     enabled: boolean;
     port: number;
     host: string;
     corsOrigins: string[];
+    dashboardRefreshIntervalMs: number;
+    /** 调试页面配置 */
+    debug: {
+      /** 是否启用调试功能 */
+      enabled: boolean;
+      /** 是否记录提示词调试信息 */
+      recordPrompts: boolean;
+      /** 调试信息保留数量 */
+      maxHistory: number;
+    };
+    /** Think 模式配置 */
+    think?: {
+      /** 是否启用 think 模式 */
+      enabled: boolean;
+      /** think 标签分隔符 */
+      separator: string;
+      /** 显示模式: collapsible/inline */
+      displayMode: string;
+    };
+    /** 聊天界面配置 */
+    chat?: {
+      /** 是否启用 Markdown 渲染 */
+      markdownEnabled: boolean;
+      /** 是否使用浅色主题 */
+      lightTheme: boolean;
+      /** 是否启用代码高亮 */
+      codeHighlighting: boolean;
+    };
   };
-  /** MCP 配置 */
   mcp: {
     enabled: boolean;
     serverName: string;
   };
-  /** WebSocket 配置 */
   websocket: {
     enabled: boolean;
     port: number;
@@ -190,24 +367,19 @@ export interface AdapterConfig {
  * 完整配置
  */
 export interface OuroborosConfig {
-  /** 版本 */
   version: string;
-  /** 核心模块 */
   core: CoreConfig;
-  /** 激素系统 */
   hormone: HormoneConfig;
-  /** 模型引擎 */
+  prompts: PromptsConfig;
   model: ModelEngineConfig;
-  /** 记忆系统 */
   memory: MemoryConfig;
-  /** 工具系统 */
+  bodySchema: BodySchemaConfig;
+  worldModel: WorldModelConfig;
   tool: ToolConfig;
-  /** 安全系统 */
+  skills: SkillsConfig;
   safety: SafetyConfig;
-  /** 进化系统 */
   evolution: EvolutionConfig;
-  /** 日志 */
+  reflection: ReflectionConfig;
   log: LogConfig;
-  /** 适配器 */
   adapter: AdapterConfig;
 }

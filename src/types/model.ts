@@ -134,6 +134,18 @@ export interface PerformanceMetrics {
 }
 
 /**
+ * 三类提示词结构
+ */
+export interface ThreeTierPrompts {
+  /** 系统提示词 */
+  system: string;
+  /** 自我提示词 */
+  self: string;
+  /** 记忆提示词 */
+  memory: string;
+}
+
+/**
  * 提示词组装结果
  */
 export interface AssembledPrompt {
@@ -145,6 +157,8 @@ export interface AssembledPrompt {
   tokenCount: number;
   /** 是否被截断 */
   truncated: boolean;
+  /** 三类提示词（调试用） */
+  threeTierPrompts?: ThreeTierPrompts;
 }
 
 /**

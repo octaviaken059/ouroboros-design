@@ -133,11 +133,11 @@ export const logger = createLogger();
  * 上下文日志记录器接口
  */
 export interface ContextLogger {
-  error: (message: string, meta?: Record<string, unknown>) => void;
-  warn: (message: string, meta?: Record<string, unknown>) => void;
-  info: (message: string, meta?: Record<string, unknown>) => void;
-  debug: (message: string, meta?: Record<string, unknown>) => void;
-  trace: (message: string, meta?: Record<string, unknown>) => void;
+  error: (message: string, meta?: Record<string, unknown> | Error | string | unknown) => void;
+  warn: (message: string, meta?: Record<string, unknown> | unknown) => void;
+  info: (message: string, meta?: Record<string, unknown> | unknown) => void;
+  debug: (message: string, meta?: Record<string, unknown> | unknown) => void;
+  trace: (message: string, meta?: Record<string, unknown> | unknown) => void;
 }
 
 /**
@@ -147,20 +147,44 @@ export interface ContextLogger {
  */
 export function createContextLogger(context: string): ContextLogger {
   return {
-    error: (message: string, meta?: Record<string, unknown>): void => {
-      logger.error(message, { context, ...meta });
+    error: (message: string, meta?: Record<string, unknown> | Error | string | unknown): void => {
+      if (meta instanceof Error) {
+        logger.error(message, { context, error: meta.message, stack: meta.stack });
+      } else if (typeof meta === 'string') {
+        logger.error(message, { context, detail: meta });
+      } else if (meta && typeof meta === 'object') {
+        logger.error(message, { context, ...meta });
+      } else {
+        logger.error(message, { context, meta });
+      }
     },
-    warn: (message: string, meta?: Record<string, unknown>): void => {
-      logger.warn(message, { context, ...meta });
+    warn: (message: string, meta?: Record<string, unknown> | unknown): void => {
+      if (meta && typeof meta === 'object') {
+        logger.warn(message, { context, ...(meta as Record<string, unknown>) });
+      } else {
+        logger.warn(message, { context, meta });
+      }
     },
-    info: (message: string, meta?: Record<string, unknown>): void => {
-      logger.info(message, { context, ...meta });
+    info: (message: string, meta?: Record<string, unknown> | unknown): void => {
+      if (meta && typeof meta === 'object') {
+        logger.info(message, { context, ...(meta as Record<string, unknown>) });
+      } else {
+        logger.info(message, { context, meta });
+      }
     },
-    debug: (message: string, meta?: Record<string, unknown>): void => {
-      logger.debug(message, { context, ...meta });
+    debug: (message: string, meta?: Record<string, unknown> | unknown): void => {
+      if (meta && typeof meta === 'object') {
+        logger.debug(message, { context, ...(meta as Record<string, unknown>) });
+      } else {
+        logger.debug(message, { context, meta });
+      }
     },
-    trace: (message: string, meta?: Record<string, unknown>): void => {
-      logger.log('trace', message, { context, ...meta });
+    trace: (message: string, meta?: Record<string, unknown> | unknown): void => {
+      if (meta && typeof meta === 'object') {
+        logger.log('trace', message, { context, ...(meta as Record<string, unknown>) });
+      } else {
+        logger.log('trace', message, { context, meta });
+      }
     },
   };
 }

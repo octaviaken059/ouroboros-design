@@ -289,6 +289,13 @@ export function deserializeDistribution(
 export class BayesianCore {
   /** 工具置信度映射 */
   private toolConfidences: Map<string, BetaDistribution> = new Map();
+  /** 学习历史 */
+  private learningHistory: Array<{
+    toolName: string;
+    timestamp: string;
+    confidence: number;
+    success: boolean;
+  }> = [];
 
   /**
    * 注册工具
@@ -323,11 +330,38 @@ export class BayesianCore {
     this.toolConfidences.set(toolName, updated);
     
     const result = getConfidenceResult(updated);
+    
+    // 记录学习历史
+    this.learningHistory.push({
+      toolName,
+      timestamp: new Date().toISOString(),
+      confidence: result.confidence,
+      success,
+    });
+    
+    // 限制历史记录数量
+    if (this.learningHistory.length > 1000) {
+      this.learningHistory = this.learningHistory.slice(-500);
+    }
+    
     logger.debug('工具置信度已更新', {
       toolName,
       success,
       confidence: result.confidence,
     });
+  }
+
+  /**
+   * 获取学习历史
+   * @returns 学习历史记录
+   */
+  getLearningHistory(): Array<{
+    toolName: string;
+    timestamp: string;
+    confidence: number;
+    success: boolean;
+  }> {
+    return [...this.learningHistory];
   }
 
   /**

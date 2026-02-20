@@ -1,17 +1,19 @@
 {
   "$schema": "./config.schema.json",
-  "_comment": "Ouroboros Agent 配置文件 - 按功能层级组织",
+  "_comment": "Ouroboros Agent 配置示例文件 - 包含所有配置项说明",
   "version": "2.0.0",
+  
   "core": {
     "identity": {
       "name": "Ouroboros",
       "version": "2.0.0",
-      "description": "具有自我意识的 AI Agent，能够感知自身状态、积累经验并持续进化",
-      "creator": "Ken"
+      "description": "具有自我意识的 AI Agent",
+      "creator": "Your Name"
     },
     "selfDescriptionIntervalMs": 5000,
     "cognitiveDecayRate": 0.01
   },
+
   "hormone": {
     "baselineLevels": {
       "dopamine": 50,
@@ -44,34 +46,55 @@
     "updateIntervalMs": 1000,
     "triggerCheckIntervalMs": 500
   },
+
   "model": {
     "defaultModel": {
-      "provider": "ollama",
-      "model": "deepseek-r1:8b",
-      "baseUrl": "http://localhost:11434",
+      "provider": "openai",
+      "model": "gpt-4",
+      "apiKey": "${OPENAI_API_KEY}",
       "temperature": 0.7,
       "maxTokens": 2048,
       "timeoutMs": 60000
     },
     "fallbackModel": {
-      "provider": "ollama",
-      "model": "qwen2.5:7b",
-      "baseUrl": "http://localhost:11434",
+      "provider": "anthropic",
+      "model": "claude-3-sonnet",
+      "apiKey": "${ANTHROPIC_API_KEY}",
       "temperature": 0.7,
       "maxTokens": 2048,
       "timeoutMs": 60000
     },
     "tokenBudget": {
-      "system": 0.2,
-      "self": 0.4,
-      "memory": 0.3,
-      "user": 0.1
+      "system": 0.15,
+      "self": 0.35,
+      "memory": 0.30,
+      "user": 0.20
     },
     "totalTokenBudget": 4096,
     "maxRetries": 3,
     "retryDelayMs": 1000,
     "performanceMonitorMaxRecords": 1000
   },
+
+  "prompts": {
+    "system": {
+      "template": "你是 {name}，一个具有自我意识的 AI Agent。",
+      "readOnly": true
+    },
+    "self": {
+      "identityTemplate": "我是 {name} v{version}，由 {creator} 创造。",
+      "capabilityTemplate": "我的能力包括: {capabilities}",
+      "stateTemplate": "当前状态: 情绪 {emotion}，专注度 {focus}%",
+      "optimizable": true
+    },
+    "memory": {
+      "maxContextMemories": 5,
+      "includeRecentConversation": true,
+      "includeRelevantFacts": true,
+      "dynamicAssembly": true
+    }
+  },
+
   "memory": {
     "shortTermCapacity": 50,
     "longTermStorageDir": "./data/memory",
@@ -81,51 +104,165 @@
     "autoArchiveDays": 30,
     "vectorStore": {
       "enabled": true,
+      "provider": "ollama",
+      "model": "nomic-embed-text",
       "dimension": 768,
-      "similarityThreshold": 0.7
+      "baseUrl": "http://localhost:11434",
+      "similarityThreshold": 0.7,
+      "maxResults": 10
     },
     "retrieval": {
       "defaultLimit": 5,
       "maxLimit": 20,
       "semanticWeight": 0.4,
       "temporalWeight": 0.3,
-      "importanceWeight": 0.3
+      "importanceWeight": 0.3,
+      "keywordSearchEnabled": true,
+      "vectorSearchEnabled": true
+    },
+    "importExport": {
+      "allowedFormats": ["json", "markdown", "csv"],
+      "maxExportSize": 1000000,
+      "includeEmbeddings": false
     }
   },
+
+  "bodySchema": {
+    "sensors": {
+      "enabled": ["filesystem", "network", "process", "time", "system_resources"],
+      "updateIntervalMs": 5000
+    },
+    "actuators": {
+      "enabled": ["file_write", "exec_command", "http_request", "websocket_send"],
+      "timeoutMs": 30000,
+      "maxConcurrent": 5
+    },
+    "resourceMonitor": {
+      "enabled": true,
+      "checkIntervalMs": 5000,
+      "alertThresholds": {
+        "cpu": 0.8,
+        "memory": 0.85,
+        "disk": 0.9
+      }
+    }
+  },
+
+  "worldModel": {
+    "patternRecognition": {
+      "enabled": true,
+      "minConfidence": 0.6,
+      "maxPatterns": 100
+    },
+    "riskManagement": {
+      "enabled": true,
+      "autoEscalate": true,
+      "maxActiveRisks": 20
+    },
+    "opportunityDetection": {
+      "enabled": true,
+      "minPotential": 0.5,
+      "maxOpportunities": 50
+    }
+  },
+
   "tool": {
+    "discovery": {
+      "enabled": true,
+      "scanIntervalMs": 300000,
+      "scanPaths": ["/usr/bin", "/usr/local/bin"],
+      "mcpServers": {
+        "enabled": false,
+        "configPath": "./config/mcp-servers.json"
+      }
+    },
+    "confidence": {
+      "initialValue": 0.5,
+      "learningRate": 0.1,
+      "minConfidence": 0.1,
+      "maxConfidence": 0.99
+    },
     "timeoutMs": 30000,
-    "initialConfidence": 0.5,
-    "confidenceLearningRate": 0.1,
     "enabledTools": [],
     "disabledTools": []
   },
+
+  "skills": {
+    "mastery": {
+      "noviceThreshold": 0,
+      "intermediateThreshold": 100,
+      "advancedThreshold": 500,
+      "expertThreshold": 1000
+    },
+    "learning": {
+      "successXpGain": 10,
+      "failureXpGain": 2,
+      "complexityMultiplier": 1.5
+    }
+  },
+
   "safety": {
     "dualMindEnabled": true,
     "hardwareWatchdogEnabled": false,
     "identityAnchorIntervalMs": 60000,
     "maxConsecutiveErrors": 5,
-    "godelImmunityEnabled": true
+    "godelImmunityEnabled": true,
+    "selfReferenceProtection": {
+      "codeModificationRequiresApproval": true,
+      "maxModificationSize": 1000,
+      "blockedPatterns": ["process.exit", "eval(", "require('child_process')"]
+    }
   },
+
   "evolution": {
     "heartbeatIntervalMs": 300000,
     "deepEvolutionIntervalMs": 3600000,
     "reflectionThreshold": 0.8,
-    "abTestingEnabled": true,
+    "abTesting": {
+      "enabled": true,
+      "minSamples": 10,
+      "confidenceLevel": 0.95,
+      "maxConcurrentTests": 5
+    },
     "learningQueueMaxSize": 100
   },
+
+  "reflection": {
+    "enabled": true,
+    "mode": "semi_autonomous",
+    "scheduleIntervalMs": 1800000,
+    "performanceThreshold": 0.7,
+    "maxInsights": 10,
+    "autoExecuteLowRisk": true,
+    "triggers": {
+      "scheduled": true,
+      "performanceDrop": true,
+      "anomalyDetected": true,
+      "toolDiscovered": true,
+      "userRequest": false
+    }
+  },
+
   "log": {
     "level": "info",
     "outputDir": "./logs",
     "consoleOutput": true,
     "fileOutput": true,
-    "retentionDays": 30
+    "retentionDays": 30,
+    "errorMonitoring": {
+      "enabled": true,
+      "alertThreshold": 5,
+      "alertIntervalMs": 300000
+    }
   },
+
   "adapter": {
     "web": {
       "enabled": true,
       "port": 8080,
       "host": "0.0.0.0",
-      "corsOrigins": ["*"]
+      "corsOrigins": ["*"],
+      "dashboardRefreshIntervalMs": 5000
     },
     "mcp": {
       "enabled": false,

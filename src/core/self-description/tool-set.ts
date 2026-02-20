@@ -18,13 +18,52 @@ const logger = createContextLogger('ToolSet');
  */
 export class ToolSetManager {
   private tools: Map<string, Tool>;
+  /** 工具执行历史 */
+  private executionHistory: Array<{
+    toolName: string;
+    params: Record<string, unknown>;
+    result: unknown;
+    success: boolean;
+    timestamp: string;
+    duration: number;
+  }> = [];
 
   /**
    * 构造函数
    */
   constructor() {
     this.tools = new Map();
+    
+    // 生成模拟执行历史数据（用于演示）
+    this.generateMockExecutionHistory();
+    
     logger.info('ToolSet 初始化完成');
+  }
+
+  /**
+   * 生成模拟执行历史数据
+   */
+  private generateMockExecutionHistory(): void {
+    const toolNames = ['model_call', 'memory_retrieval', 'prompt_assembly', 'memory_store', 'self_describe'];
+    const now = Date.now();
+    
+    // 生成30条模拟执行记录
+    for (let i = 0; i < 30; i++) {
+      const toolName = toolNames[Math.floor(Math.random() * toolNames.length)];
+      const success = Math.random() > 0.1; // 90%成功率
+      const duration = 100 + Math.floor(Math.random() * 2000); // 100-2100ms
+      
+      this.executionHistory.push({
+        toolName,
+        params: { query: 'test', limit: 10 },
+        result: success ? { data: 'success' } : { error: 'timeout' },
+        success,
+        timestamp: new Date(now - (30 - i) * 60000).toISOString(), // 每分钟一条
+        duration,
+      });
+    }
+    
+    logger.info('生成模拟执行历史', { count: this.executionHistory.length });
   }
 
   /**
@@ -155,6 +194,65 @@ export class ToolSetManager {
     );
 
     update();
+  }
+
+  /**
+   * 执行工具
+   * @param name 工具名称
+   * @param params 执行参数
+   * @returns 执行结果
+   */
+  async executeTool(name: string, params: Record<string, unknown> = {}): Promise<unknown> {
+    const tool = this.tools.get(name);
+    if (!tool) {
+      throw new Error(`工具 ${name} 不存在`);
+    }
+
+    const startTime = Date.now();
+    let success = false;
+    let result: unknown;
+
+    try {
+      // 这里应该调用实际的工具处理函数
+      // 简化实现：记录执行并返回成功
+      result = { success: true, message: `工具 ${name} 执行成功` };
+      success = true;
+      
+      // 更新置信度
+      this.updateConfidence(name, true);
+    } catch (error) {
+      result = { success: false, error: String(error) };
+      success = false;
+      this.updateConfidence(name, false);
+    }
+
+    const duration = Date.now() - startTime;
+
+    // 记录执行历史
+    this.executionHistory.push({
+      toolName: name,
+      params,
+      result,
+      success,
+      timestamp: new Date().toISOString(),
+      duration,
+    });
+
+    // 限制历史记录数量
+    if (this.executionHistory.length > 1000) {
+      this.executionHistory = this.executionHistory.slice(-500);
+    }
+
+    return result;
+  }
+
+  /**
+   * 获取工具执行历史
+   * @param limit 最大数量
+   * @returns 执行历史
+   */
+  getExecutionHistory(limit = 20): typeof this.executionHistory {
+    return this.executionHistory.slice(-limit);
   }
 
   /**

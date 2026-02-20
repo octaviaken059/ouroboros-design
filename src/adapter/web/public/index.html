@@ -2,7 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f0f1a">
   <title>Ouroboros Agent - 控制台</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -32,19 +35,21 @@
           <span class="nav-icon">🎲</span>
           <span>贝叶斯</span>
         </a>
+        <a href="#tools" class="nav-item" data-tab="tools">
+          <span class="nav-icon">🛠️</span>
+          <span>工具</span>
+        </a>
         <a href="#debug" class="nav-item" data-tab="debug">
           <span class="nav-icon">🐛</span>
           <span>调试</span>
         </a>
-        <a href="#tools" class="nav-item" data-tab="tools">
-          <span class="nav-icon">🛠️</span>
-          <span>工具</span>
-          <span class="badge">P5</span>
-        </a>
         <a href="#reflection" class="nav-item" data-tab="reflection">
           <span class="nav-icon">🤔</span>
           <span>反思</span>
-          <span class="badge">P5</span>
+        </a>
+        <a href="#metacognition" class="nav-item" data-tab="metacognition">
+          <span class="nav-icon">🧠</span>
+          <span>元认知</span>
         </a>
       </nav>
 
@@ -86,9 +91,20 @@
               >
               <button id="send-btn" class="send-btn">发送</button>
             </div>
-            <div class="chat-hints">
-              <span>按 Enter 发送</span>
-              <span id="typing-status"></span>
+            <div class="chat-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding: 0 4px;">
+              <div class="chat-hints">
+                <span style="font-size: 12px; color: var(--text-secondary);">按 Enter 发送 / Shift+Enter 换行</span>
+                <span id="typing-status" style="font-size: 12px; color: var(--primary);"></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <button onclick="clearChatHistory()" style="background: none; border: none; color: var(--text-secondary); font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 4px;">
+                  🗑️ 清空
+                </button>
+                <label class="thinking-toggle" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--text-secondary);">
+                  <input type="checkbox" id="thinking-mode-toggle" style="cursor: pointer;">
+                  <span>🧠 深度思考</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -173,9 +189,23 @@
           <!-- 性能指标 -->
           <div class="card wide">
             <h3>⚡ 性能指标</h3>
-            <div class="placeholder">
-              <p>📊 Phase 5 将实现性能监控图表</p>
-              <p>包括：响应时间、Token使用量、模型调用成功率</p>
+            <div class="performance-charts-grid">
+              <div class="chart-wrapper">
+                <h4>响应时间趋势</h4>
+                <div class="chart-container" id="response-time-chart"></div>
+              </div>
+              <div class="chart-wrapper">
+                <h4>Token使用量</h4>
+                <div class="chart-container" id="token-usage-chart"></div>
+              </div>
+              <div class="chart-wrapper">
+                <h4>模型调用成功率</h4>
+                <div class="chart-container" id="success-rate-chart"></div>
+              </div>
+              <div class="chart-wrapper">
+                <h4>激素水平变化</h4>
+                <div class="chart-container" id="hormone-trend-chart"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -238,11 +268,34 @@
           </div>
 
           <div class="card wide">
-            <h3>📝 最近记忆</h3>
+            <h3>📝 记忆列表</h3>
+            
+            <!-- 搜索和筛选 -->
+            <div class="memory-controls">
+              <input type="text" id="memory-search" class="search-input" placeholder="搜索记忆...">
+              <select id="memory-type-filter" class="filter-select">
+                <option value="">所有类型</option>
+                <option value="episodic">情景记忆</option>
+                <option value="semantic">语义记忆</option>
+                <option value="procedural">程序记忆</option>
+                <option value="reflective">反思记忆</option>
+              </select>
+              <select id="memory-importance-filter" class="filter-select">
+                <option value="">所有重要性</option>
+                <option value="0.7">高重要性 (≥70%)</option>
+                <option value="0.4">中重要性 (≥40%)</option>
+                <option value="0">低重要性 (<40%)</option>
+              </select>
+              <button class="btn btn-primary" onclick="loadMemoryList()">🔍 搜索</button>
+            </div>
+            
             <div class="memory-list" id="memory-list">
-              <div class="placeholder">
-                <p>记忆列表将在 Phase 5 实现</p>
-              </div>
+              <div class="loading">加载中...</div>
+            </div>
+            <div id="memory-pagination" style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <button id="mem-prev-btn" class="btn" onclick="prevMemoryPage()">上一页</button>
+              <span id="mem-page-info">第 1 页</span>
+              <button id="mem-next-btn" class="btn" onclick="nextMemoryPage()">下一页</button>
             </div>
           </div>
         </div>
@@ -281,15 +334,97 @@
 
           <div class="card">
             <h3>📊 置信度分布</h3>
-            <div class="placeholder">
-              <p>置信度分布图表将在 Phase 5 实现</p>
+            <div class="chart-container" id="confidence-distribution-chart">
+              <div class="loading">加载中...</div>
             </div>
           </div>
 
           <div class="card">
-            <h3>🎯 探索-利用</h3>
-            <div class="placeholder">
-              <p>UCB 算法可视化将在 Phase 5 实现</p>
+            <h3>📈 学习曲线</h3>
+            <div class="chart-container" id="learning-curve-chart">
+              <div class="loading">加载中...</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🎯 探索-利用平衡</h3>
+            <div class="chart-container" id="ucb-visualization-chart">
+              <div class="loading">加载中...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 工具管理 -->
+      <section class="tab-content" id="tools-tab">
+        <header class="page-header">
+          <h1>🛠️ 工具系统</h1>
+          <p>工具注册和管理</p>
+        </header>
+        
+        <div class="tools-grid">
+          <div class="card">
+            <h3>📊 工具统计</h3>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-label">总工具数</span>
+                <span class="stat-value" id="tools-total">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">高置信度</span>
+                <span class="stat-value" id="tools-high-confidence">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">探索中</span>
+                <span class="stat-value" id="tools-exploring">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <h3>⚡ 响应时间</h3>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-label">平均响应</span>
+                <span class="stat-value" id="avg-response-time">-</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">峰值响应</span>
+                <span class="stat-value" id="peak-response-time">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card wide">
+            <h3>🔧 工具列表</h3>
+            <div class="tools-list" id="tools-list">
+              <div class="loading">加载中...</div>
+            </div>
+          </div>
+          
+          <div class="card wide">
+            <h3>📜 执行历史</h3>
+            <div class="tool-history" id="tool-history">
+              <div class="loading">加载中...</div>
+            </div>
+          </div>
+          
+          <div class="card wide">
+            <h3>🎯 OpenClaw 技能</h3>
+            <div class="skills-controls" style="margin-bottom: 16px; display: flex; gap: 12px;">
+              <input type="text" id="skill-search" class="search-input" placeholder="搜索技能..." style="flex: 1;">
+              <select id="skill-category-filter" class="filter-select">
+                <option value="">所有类别</option>
+                <option value="productivity">生产力</option>
+                <option value="communication">通讯</option>
+                <option value="development">开发</option>
+                <option value="media">媒体</option>
+                <option value="system">系统</option>
+              </select>
+              <button class="btn btn-primary" onclick="loadSkills()">🔍 搜索</button>
+            </div>
+            <div class="skills-list" id="skills-list">
+              <div class="loading">加载中...</div>
             </div>
           </div>
         </div>
@@ -302,20 +437,44 @@
           <p>查看真实发送给模型的提示词和数据</p>
         </header>
 
-        <div class="debug-grid">
+        <!-- 调试控制面板 (只读显示) -->
+        <div class="card wide" id="debug-control-panel">
+          <h3>⚙️ 调试配置状态</h3>
+          <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="debug-enabled-indicator" style="width: 12px; height: 12px; border-radius: 50%; background: #4ade80;"></span>
+              <span>调试功能: <span id="debug-enabled-status">已启用</span></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="debug-record-indicator" style="width: 12px; height: 12px; border-radius: 50%; background: #4ade80;"></span>
+              <span>记录提示词: <span id="debug-record-status">已启用</span></span>
+            </div>
+            <div id="debug-status" style="margin-left: auto; color: var(--text-secondary); font-size: 14px;">
+              配置来源: config.json
+            </div>
+          </div>
+          <p style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+            💡 调试配置请在服务器 config.json 中修改，修改后需重启服务器生效
+          </p>
+        </div>
+
+        <!-- 始终显示的内容：系统提示词和自我描述 -->
+        <div class="debug-grid always-visible">
           <div class="card wide">
             <h3>📋 System Prompt (系统提示词)</h3>
-            <pre class="code-block" id="debug-system"><code>尚未发送任何消息...</code></pre>
-          </div>
-
-          <div class="card wide">
-            <h3>🧠 Memory Context (记忆上下文)</h3>
-            <pre class="code-block" id="debug-memory"><code></code></pre>
+            <pre class="code-block" id="debug-system"><code>加载中...</code></pre>
           </div>
 
           <div class="card wide">
             <h3>🤖 Self Description (自我描述)</h3>
-            <pre class="code-block" id="debug-self"><code></code></pre>
+            <pre class="code-block" id="debug-self"><code>加载中...</code></pre>
+          </div>
+        </div>
+
+        <div class="debug-grid" id="debug-content" style="display: none;">
+          <div class="card wide">
+            <h3>🧠 Memory Context (记忆上下文)</h3>
+            <pre class="code-block" id="debug-memory"><code></code></pre>
           </div>
 
           <div class="card wide">
@@ -325,23 +484,8 @@
 
           <div class="card">
             <h3>📊 Token 统计</h3>
-            <div class="stats-grid" id="debug-tokens">
-              <div class="stat-item">
-                <span class="stat-label">System</span>
-                <span class="stat-value" id="debug-token-system">-</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Memory</span>
-                <span class="stat-value" id="debug-token-memory">-</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">User</span>
-                <span class="stat-value" id="debug-token-user">-</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Total</span>
-                <span class="stat-value" id="debug-token-total">-</span>
-              </div>
+            <div id="token-breakdown">
+              <div class="loading">加载中...</div>
             </div>
           </div>
 
@@ -353,48 +497,511 @@
             </div>
           </div>
         </div>
-      </section>
 
-      <!-- 工具管理 (Phase 5) -->
-      <section class="tab-content" id="tools-tab">
-        <header class="page-header">
-          <h1>🛠️ 工具系统</h1>
-          <p>工具注册和管理</p>
-        </header>
-        <div class="placeholder-box">
-          <span class="placeholder-icon">🔧</span>
-          <h2>Phase 5 待实现</h2>
-          <p>工具系统将包括：</p>
-          <ul>
-            <li>工具注册和配置</li>
-            <li>工具调用接口</li>
-            <li>工具执行历史</li>
-            <li>MCP 协议集成</li>
-          </ul>
+        <!-- 调试禁用提示 -->
+        <div class="card wide" id="debug-disabled-message" style="display: none; text-align: center; padding: 40px;">
+          <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+          <h3>调试功能已禁用</h3>
+          <p style="color: var(--text-secondary); margin-top: 8px;">
+            请在上方开启"启用调试功能"开关以查看调试信息。<br>
+            注意：启用调试会记录敏感信息，建议仅在开发调试时使用。
+          </p>
         </div>
       </section>
 
-      <!-- 反思引擎 (Phase 5) -->
+      <!-- 反思引擎 -->
       <section class="tab-content" id="reflection-tab">
         <header class="page-header">
-          <h1>🤔 反思引擎</h1>
-          <p>自我分析和进化</p>
+          <h1>🪞 反思引擎</h1>
+          <p>自我监控、分析和进化 - 软自指 + A/B 测试</p>
         </header>
-        <div class="placeholder-box">
-          <span class="placeholder-icon">🪞</span>
-          <h2>Phase 5 待实现</h2>
-          <p>反思引擎将包括：</p>
-          <ul>
-            <li>性能分析和洞察生成</li>
-            <li>记忆模式识别</li>
-            <li>自动改进建议</li>
-            <li>进化日志查看</li>
-          </ul>
+        
+        <div class="reflection-container">
+          <!-- 状态概览 -->
+          <div class="card">
+            <h3>📊 反思状态</h3>
+            <div class="reflection-stats" id="reflection-stats">
+              <div class="stat-row">
+                <span class="stat-label">引擎状态</span>
+                <span class="stat-value" id="reflection-status">-</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">审批模式</span>
+                <span class="stat-value" id="approval-mode">-</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">待审批</span>
+                <span class="stat-value" id="pending-count">-</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">总反思次数</span>
+                <span class="stat-value" id="reflection-count">-</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">已应用洞察</span>
+                <span class="stat-value" id="applied-insights-count">-</span>
+              </div>
+            </div>
+            <div class="reflection-actions">
+              <button class="btn btn-primary" onclick="triggerReflection()">🔄 触发反思</button>
+              <select id="mode-select" onchange="changeApprovalMode(this.value)">
+                <option value="auto">自动模式</option>
+                <option value="conservative" selected>保守模式</option>
+                <option value="human">人工模式</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 性能监控 -->
+          <div class="card">
+            <h3>📈 性能指标</h3>
+            <div class="performance-metrics" id="performance-metrics">
+              <div class="metric-item">
+                <span class="metric-name">响应时间</span>
+                <span class="metric-value" id="response-time">-</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-name">响应趋势</span>
+                <span class="metric-value" id="response-trend">-</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-name">内存使用</span>
+                <span class="metric-value" id="memory-usage">-</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-name">错误率</span>
+                <span class="metric-value" id="error-rate">-</span>
+              </div>
+            </div>
+            <div id="perf-stats" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);"></div>
+          </div>
+
+          <!-- Token 预算 -->
+          <div class="card">
+            <h3>💰 Token 预算</h3>
+            <div class="token-budget" id="token-budget">
+              <p>加载中...</p>
+            </div>
+          </div>
+
+          <!-- 触发器状态 -->
+          <div class="card wide">
+            <h3>⚡ 触发器状态</h3>
+            <div class="triggers-list" id="triggers-list">
+              <p class="empty">加载中...</p>
+            </div>
+          </div>
+
+          <!-- 待审批列表 -->
+          <div class="card wide">
+            <h3>⏳ 待审批的优化计划</h3>
+            <div class="pending-list" id="pending-list">
+              <p class="empty">加载中...</p>
+            </div>
+          </div>
+
+          <!-- 反思历史 -->
+          <div class="card wide">
+            <h3>📝 反思历史</h3>
+            <div class="reflection-history" id="reflection-history">
+              <p class="empty">加载中...</p>
+            </div>
+          </div>
+
+          <!-- 软自指 + A/B测试 (Phase 6) -->
+          <div class="card">
+            <h3>🧬 进化统计</h3>
+            <div class="evolution-stats" id="evolution-stats">
+              <div class="stat-row">
+                <span class="stat-label">总变体数</span>
+                <span class="stat-value" id="variant-count">-</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">活跃变体</span>
+                <span class="stat-value" id="active-variant-count">-</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">运行中A/B测试</span>
+                <span class="stat-value" id="active-test-count">-</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">已完成测试</span>
+                <span class="stat-value" id="completed-test-count">-</span>
+              </div>
+            </div>
+            <div id="total-usage" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);"></div>
+          </div>
+
+          <!-- 提示词变体列表 -->
+          <div class="card wide">
+            <h3>📋 提示词变体</h3>
+            <div class="variant-list" id="variant-list">
+              <p class="empty">加载中...</p>
+            </div>
+          </div>
+
+          <!-- A/B测试列表 -->
+          <div class="card wide">
+            <h3>🧪 A/B 测试</h3>
+            <div class="ab-test-list" id="ab-test-list">
+              <p class="empty">加载中...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 元认知架构 (P0-P4) -->
+      <section class="tab-content" id="metacognition-tab">
+        <header class="page-header">
+          <h1>🧠 元认知架构</h1>
+          <p>P0-P4 完整元认知能力可视化</p>
+        </header>
+
+        <!-- 架构概览 -->
+        <div class="card wide">
+          <h3>🏗️ 元认知架构概览</h3>
+          <div class="metacognition-overview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+            <div class="phase-card" style="padding: 16px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #4ade80;">
+              <div style="font-size: 24px; margin-bottom: 8px;">🎯</div>
+              <div style="font-weight: 600;">P0: 元认知核心</div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">能力边界 · 不确定性</div>
+            </div>
+            <div class="phase-card" style="padding: 16px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #60a5fa;">
+              <div style="font-size: 24px; margin-bottom: 8px;">📝</div>
+              <div style="font-weight: 600;">P1: 动态提示</div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">实时编译 · 身份状态</div>
+            </div>
+            <div class="phase-card" style="padding: 16px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #f472b6;">
+              <div style="font-size: 24px; margin-bottom: 8px;">🔍</div>
+              <div style="font-weight: 600;">P2: 推理监控</div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">思维链 · 策略编码</div>
+            </div>
+            <div class="phase-card" style="padding: 16px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #a78bfa;">
+              <div style="font-size: 24px; margin-bottom: 8px;">💾</div>
+              <div style="font-weight: 600;">P3: 自指记忆</div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">6层结构 · 遗忘算法</div>
+            </div>
+            <div class="phase-card" style="padding: 16px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #fbbf24;">
+              <div style="font-size: 24px; margin-bottom: 8px;">⚡</div>
+              <div style="font-weight: 600;">P4: 策略执行</div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">编译执行 · 效果跟踪</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- P0: 元认知核心 -->
+        <div class="card wide">
+          <h3>🎯 P0: 元认知核心 (MetaCognitionCore)</h3>
+          <div class="metacognition-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 16px;">
+            
+            <!-- 能力边界 -->
+            <div class="capability-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">📊 能力边界</h4>
+              <div id="capability-bounds-list" class="capability-list">
+                <div class="loading">加载中...</div>
+              </div>
+            </div>
+
+            <!-- 不确定性评估 -->
+            <div class="uncertainty-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🎲 不确定性量化</h4>
+              <div id="uncertainty-display">
+                <div class="stat-row">
+                  <span class="stat-label">系统不确定性</span>
+                  <span class="stat-value" id="system-uncertainty">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">建议操作</span>
+                  <span class="stat-value" id="recommendation">-</span>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="assessUncertainty()" style="margin-top: 12px;">
+                🔍 评估不确定性
+              </button>
+            </div>
+
+            <!-- 状态报告 -->
+            <div class="status-section" style="grid-column: 1 / -1;">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">📈 元认知状态报告</h4>
+              <pre id="metacognition-report" style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; overflow-x: auto;"><code>加载中...</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- P1: 动态提示生成 -->
+        <div class="card wide">
+          <h3>📝 P1: 动态提示生成 (DynamicPromptAssembler)</h3>
+          <div class="prompt-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 16px;">
+            
+            <!-- 身份状态 -->
+            <div class="identity-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🎭 当前身份状态</h4>
+              <div id="identity-state" style="padding: 20px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                <div id="identity-icon" style="font-size: 48px; margin-bottom: 8px;">🤔</div>
+                <div id="identity-name" style="font-weight: 600; font-size: 18px;">分析中...</div>
+                <div id="identity-desc" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">-</div>
+              </div>
+              <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="stat-item" style="background: var(--bg-tertiary); padding: 8px; border-radius: 4px; text-align: center;">
+                  <div style="font-size: 12px; color: var(--text-secondary);">置信度</div>
+                  <div id="identity-confidence" style="font-weight: 600;">-</div>
+                </div>
+                <div class="stat-item" style="background: var(--bg-tertiary); padding: 8px; border-radius: 4px; text-align: center;">
+                  <div style="font-size: 12px; color: var(--text-secondary);">认知负荷</div>
+                  <div id="identity-load" style="font-weight: 600;">-</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Token 预算 -->
+            <div class="token-budget-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">💰 Token 预算</h4>
+              <div id="dynamic-token-budget">
+                <div class="stat-row">
+                  <span class="stat-label">总预算</span>
+                  <span class="stat-value" id="prompt-budget-total">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">已使用</span>
+                  <span class="stat-value" id="prompt-budget-used">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">剩余</span>
+                  <span class="stat-value" id="prompt-budget-remaining">-</span>
+                </div>
+                <div style="margin-top: 12px; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+                  <div id="prompt-budget-bar" style="height: 100%; background: linear-gradient(90deg, #4ade80, #fbbf24, #ef4444); width: 0%; transition: width 0.3s;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 编译的 System Prompt -->
+            <div class="compiled-prompt-section" style="grid-column: 1 / -1;">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">📄 编译的 System Prompt</h4>
+              <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                <button class="btn btn-primary" onclick="refreshCompiledPrompt()">🔄 刷新</button>
+                <button class="btn" onclick="previewPromptIdentity('confident')">😊 自信模式</button>
+                <button class="btn" onclick="previewPromptIdentity('uncertain')">😰 不确定</button>
+                <button class="btn" onclick="previewPromptIdentity('learning')">📚 学习中</button>
+                <button class="btn" onclick="previewPromptIdentity('stressed')">😰 高压力</button>
+              </div>
+              <pre id="compiled-prompt-display" style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; overflow-x: auto; max-height: 400px; overflow-y: auto;"><code>点击刷新查看编译后的 System Prompt...</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- P2: 推理监控与策略编码 -->
+        <div class="card wide">
+          <h3>🔍 P2: 推理监控 & 策略编码</h3>
+          <div class="reasoning-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 16px;">
+            
+            <!-- 推理统计 -->
+            <div class="reasoning-stats-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">📊 推理统计</h4>
+              <div id="reasoning-stats">
+                <div class="stat-row">
+                  <span class="stat-label">活跃推理链</span>
+                  <span class="stat-value" id="active-chains">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">总推理步骤</span>
+                  <span class="stat-value" id="total-steps">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">平均置信度</span>
+                  <span class="stat-value" id="avg-reasoning-confidence">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">检测到的缺陷</span>
+                  <span class="stat-value" id="detected-flaws">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 策略列表 -->
+            <div class="strategies-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🎯 已编码策略</h4>
+              <div id="encoded-strategies-list" style="max-height: 200px; overflow-y: auto;">
+                <div class="loading">加载中...</div>
+              </div>
+              <div style="margin-top: 12px; display: flex; gap: 8px;">
+                <input type="text" id="strategy-input" placeholder="输入新策略..." style="flex: 1; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
+                <button class="btn btn-primary" onclick="encodeStrategy()">编码</button>
+              </div>
+            </div>
+
+            <!-- 推理链可视化 -->
+            <div class="reasoning-chains-section" style="grid-column: 1 / -1;">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🔗 推理链</h4>
+              <div id="reasoning-chains-list">
+                <div class="loading">加载中...</div>
+              </div>
+            </div>
+
+            <!-- 缺陷检测 -->
+            <div class="critique-section" style="grid-column: 1 / -1;">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🔎 推理批判</h4>
+              <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                <textarea id="critique-input" placeholder="输入推理内容进行分析..." style="flex: 1; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); min-height: 80px; resize: vertical;"></textarea>
+                <button class="btn btn-primary" onclick="runCritique()" style="align-self: flex-start;">
+                  🔍 分析
+                </button>
+              </div>
+              <div id="critique-result" style="display: none;">
+                <h5>分析结果:</h5>
+                <pre style="background: var(--bg-tertiary); padding: 12px; border-radius: 4px; overflow-x: auto;"><code id="critique-output"></code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- P3: 自指编码记忆 -->
+        <div class="card wide">
+          <h3>💾 P3: 自指编码记忆 (SelfReferentialMemory)</h3>
+          <div class="self-ref-memory-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 16px;">
+            
+            <!-- 6层记忆结构 -->
+            <div class="memory-layers-section" style="grid-column: 1 / -1;">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🥞 6层记忆结构</h4>
+              <div id="memory-layers-viz" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+                <div class="layer-card" style="padding: 16px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 8px; color: #92400e;">
+                  <div style="font-weight: 600;">L1: 工作记忆</div>
+                  <div style="font-size: 12px; margin-top: 4px;">即时上下文</div>
+                  <div id="layer-working-count" style="font-size: 24px; font-weight: 700; margin-top: 8px;">-</div>
+                </div>
+                <div class="layer-card" style="padding: 16px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 8px; color: #1e40af;">
+                  <div style="font-weight: 600;">L2: 情景记忆</div>
+                  <div style="font-size: 12px; margin-top: 4px;">具体事件</div>
+                  <div id="layer-episodic-count" style="font-size: 24px; font-weight: 700; margin-top: 8px;">-</div>
+                </div>
+                <div class="layer-card" style="padding: 16px; background: linear-gradient(135deg, #d1fae5, #a7f3d0); border-radius: 8px; color: #065f46;">
+                  <div style="font-weight: 600;">L3: 语义记忆</div>
+                  <div style="font-size: 12px; margin-top: 4px;">概念知识</div>
+                  <div id="layer-semantic-count" style="font-size: 24px; font-weight: 700; margin-top: 8px;">-</div>
+                </div>
+                <div class="layer-card" style="padding: 16px; background: linear-gradient(135deg, #e9d5ff, #d8b4fe); border-radius: 8px; color: #6b21a8;">
+                  <div style="font-weight: 600;">L4: 程序记忆</div>
+                  <div style="font-size: 12px; margin-top: 4px;">技能流程</div>
+                  <div id="layer-procedural-count" style="font-size: 24px; font-weight: 700; margin-top: 8px;">-</div>
+                </div>
+                <div class="layer-card" style="padding: 16px; background: linear-gradient(135deg, #fecaca, #fca5a5); border-radius: 8px; color: #991b1b;">
+                  <div style="font-weight: 600;">L5: 自我记忆</div>
+                  <div style="font-size: 12px; margin-top: 4px;">身份认知</div>
+                  <div id="layer-self-count" style="font-size: 24px; font-weight: 700; margin-top: 8px;">-</div>
+                </div>
+                <div class="layer-card" style="padding: 16px; background: linear-gradient(135deg, #fde68a, #fcd34d); border-radius: 8px; color: #92400e;">
+                  <div style="font-weight: 600;">L6: 反思记忆</div>
+                  <div style="font-size: 12px; margin-top: 4px;">元认知洞察</div>
+                  <div id="layer-reflective-count" style="font-size: 24px; font-weight: 700; margin-top: 8px;">-</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 遗忘算法状态 -->
+            <div class="forgetting-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🧹 遗忘算法</h4>
+              <div id="forgetting-stats">
+                <div class="stat-row">
+                  <span class="stat-label">今日遗忘</span>
+                  <span class="stat-value" id="forgotten-today">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">保留率</span>
+                  <span class="stat-value" id="retention-rate">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">平均记忆年龄</span>
+                  <span class="stat-value" id="avg-memory-age">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 自指编码报告 -->
+            <div class="self-ref-report-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">📋 自指编码报告</h4>
+              <pre id="self-ref-report" style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; overflow-x: auto; max-height: 200px; overflow-y: auto;"><code>加载中...</code></pre>
+            </div>
+
+            <!-- 自指编码测试 -->
+            <div class="self-ref-test-section" style="grid-column: 1 / -1;">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🧪 测试自指编码</h4>
+              <div style="display: flex; gap: 12px;">
+                <textarea id="self-ref-input" placeholder="输入内容，AI将决定存储到哪一层记忆..." style="flex: 1; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); min-height: 60px; resize: vertical;"></textarea>
+                <button class="btn btn-primary" onclick="testSelfReferentialEncode()" style="align-self: flex-start;">
+                  编码
+                </button>
+              </div>
+              <div id="self-ref-result" style="margin-top: 12px; display: none; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
+                <div id="self-ref-decision"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- P4: 策略执行器 -->
+        <div class="card wide">
+          <h3>⚡ P4: 策略执行器 (StrategyExecutor)</h3>
+          <div class="strategy-executor-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 16px;">
+            
+            <!-- 可执行策略列表 -->
+            <div class="executable-strategies-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">📦 可执行策略</h4>
+              <div id="executable-strategies-list" style="max-height: 250px; overflow-y: auto;">
+                <div class="loading">加载中...</div>
+              </div>
+            </div>
+
+            <!-- 执行统计 -->
+            <div class="execution-stats-section">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">📊 执行统计</h4>
+              <div id="strategy-execution-stats">
+                <div class="stat-row">
+                  <span class="stat-label">总执行次数</span>
+                  <span class="stat-value" id="total-executions">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">成功执行</span>
+                  <span class="stat-value" id="successful-executions">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">失败执行</span>
+                  <span class="stat-value" id="failed-executions">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">成功率</span>
+                  <span class="stat-value" id="execution-success-rate">-</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">平均执行时间</span>
+                  <span class="stat-value" id="avg-execution-time">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 策略编译测试 -->
+            <div class="strategy-compile-section" style="grid-column: 1 / -1;">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">🔨 策略编译测试</h4>
+              <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                <input type="text" id="compile-strategy-input" placeholder="输入策略名称或自然语言策略..." style="flex: 1; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
+                <button class="btn btn-primary" onclick="compileStrategy()">编译</button>
+              </div>
+              <div id="compile-result" style="display: none;">
+                <pre style="background: var(--bg-tertiary); padding: 12px; border-radius: 4px; overflow-x: auto;"><code id="compiled-code-display"></code></pre>
+              </div>
+            </div>
+
+            <!-- 执行报告 -->
+            <div class="execution-report-section" style="grid-column: 1 / -1;">
+              <h4 style="margin-bottom: 12px; color: var(--text-secondary);">📄 执行报告</h4>
+              <pre id="execution-report" style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; overflow-x: auto; max-height: 300px; overflow-y: auto;"><code>加载中...</code></pre>
+            </div>
+          </div>
         </div>
       </section>
     </main>
   </div>
 
   <script src="/app.js"></script>
+  <script src="/mobile.js"></script>
 </body>
 </html>

@@ -41,6 +41,14 @@ export class HormoneSystem {
   /** 是否运行中 */
   private isRunning = false;
 
+  /** 激素历史记录 */
+  private history: Array<{
+    timestamp: string;
+    levels: Record<HormoneType, number>;
+  }> = [];
+  /** 历史记录最大长度 */
+  private maxHistoryLength = 100;
+
   /**
    * 创建激素系统实例
    * @param config 可选配置，使用默认配置
@@ -92,9 +100,36 @@ export class HormoneSystem {
     // 启动衰减循环
     this.decayInterval = setInterval(() => {
       this.applyNaturalDecay();
+      this.recordHistory();
     }, this.config.decayIntervalMs);
 
     logger.info('激素系统已启动');
+  }
+
+  /**
+   * 记录激素历史
+   */
+  private recordHistory(): void {
+    this.history.push({
+      timestamp: new Date().toISOString(),
+      levels: this.getAllHormoneLevels(),
+    });
+
+    // 限制历史记录数量
+    if (this.history.length > this.maxHistoryLength) {
+      this.history = this.history.slice(-this.maxHistoryLength / 2);
+    }
+  }
+
+  /**
+   * 获取激素历史
+   * @returns 激素历史记录
+   */
+  getHistory(): Array<{
+    timestamp: string;
+    levels: Record<HormoneType, number>;
+  }> {
+    return [...this.history];
   }
 
   /**

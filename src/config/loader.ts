@@ -31,48 +31,27 @@ function mergeConfig(
   target: OuroborosConfig,
   source: Partial<OuroborosConfig>
 ): OuroborosConfig {
-  return {
-    version: source.version ?? target.version,
-    core: { ...target.core, ...source.core },
-    hormone: {
-      baselineLevels: { ...target.hormone.baselineLevels, ...source.hormone?.baselineLevels },
-      decayRates: { ...target.hormone.decayRates, ...source.hormone?.decayRates },
-      maxLevels: { ...target.hormone.maxLevels, ...source.hormone?.maxLevels },
-      minLevels: { ...target.hormone.minLevels, ...source.hormone?.minLevels },
-      updateIntervalMs: source.hormone?.updateIntervalMs ?? target.hormone.updateIntervalMs,
-      triggerCheckIntervalMs: source.hormone?.triggerCheckIntervalMs ?? target.hormone.triggerCheckIntervalMs,
-    },
-    model: {
-      defaultModel: { ...target.model.defaultModel, ...source.model?.defaultModel },
-      fallbackModel: source.model?.fallbackModel
-        ? { ...target.model.fallbackModel, ...source.model.fallbackModel }
-        : target.model.fallbackModel,
-      tokenBudget: { ...target.model.tokenBudget, ...source.model?.tokenBudget },
-      totalTokenBudget: source.model?.totalTokenBudget ?? target.model.totalTokenBudget,
-      maxRetries: source.model?.maxRetries ?? target.model.maxRetries,
-      retryDelayMs: source.model?.retryDelayMs ?? target.model.retryDelayMs,
-      performanceMonitorMaxRecords: source.model?.performanceMonitorMaxRecords ?? target.model.performanceMonitorMaxRecords,
-    },
-    memory: {
-      shortTermCapacity: source.memory?.shortTermCapacity ?? target.memory.shortTermCapacity,
-      longTermStorageDir: source.memory?.longTermStorageDir ?? target.memory.longTermStorageDir,
-      consolidationThreshold: source.memory?.consolidationThreshold ?? target.memory.consolidationThreshold,
-      forgettingRate: source.memory?.forgettingRate ?? target.memory.forgettingRate,
-      maxMemories: source.memory?.maxMemories ?? target.memory.maxMemories,
-      autoArchiveDays: source.memory?.autoArchiveDays ?? target.memory.autoArchiveDays,
-      vectorStore: { ...target.memory.vectorStore, ...source.memory?.vectorStore },
-      retrieval: { ...target.memory.retrieval, ...source.memory?.retrieval },
-    },
-    tool: { ...target.tool, ...source.tool },
-    safety: { ...target.safety, ...source.safety },
-    evolution: { ...target.evolution, ...source.evolution },
-    log: { ...target.log, ...source.log },
-    adapter: {
-      web: { ...target.adapter.web, ...source.adapter?.web },
-      mcp: { ...target.adapter.mcp, ...source.adapter?.mcp },
-      websocket: { ...target.adapter.websocket, ...source.adapter?.websocket },
-    },
-  };
+  const result = { ...target } as OuroborosConfig;
+  
+  for (const key of Object.keys(source) as Array<keyof OuroborosConfig>) {
+    const sourceValue = source[key];
+    const targetValue = target[key];
+    
+    if (sourceValue === undefined) continue;
+    
+    if (typeof sourceValue === 'object' && sourceValue !== null && !Array.isArray(sourceValue)) {
+      // 递归合并对象
+      (result as any)[key] = {
+        ...(targetValue as object || {}),
+        ...sourceValue,
+      };
+    } else {
+      // 直接覆盖
+      (result as any)[key] = sourceValue;
+    }
+  }
+  
+  return result;
 }
 
 /**

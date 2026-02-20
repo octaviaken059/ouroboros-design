@@ -1,33 +1,119 @@
 {
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/workspace"],
-      "env": {},
-      "enabled": true
-    },
-    "git": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-git"],
-      "enabled": true
-    },
-    "sqlite": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sqlite", "/home/user/data.db"],
-      "enabled": true
-    },
-    "puppeteer": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
-      "enabled": false
-    },
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+  "$schema": "./mcp-schema.json",
+  "description": "MCP (Model Context Protocol) 服务器配置示例",
+  "servers": [
+    {
+      "id": "filesystem",
+      "name": "文件系统服务器",
+      "description": "提供文件读写、目录遍历等能力",
+      "transport": "stdio",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/workspace"],
+        "timeout": 30000
       },
-      "enabled": true
+      "autoConnect": true,
+      "reconnect": {
+        "enabled": true,
+        "maxRetries": 5,
+        "interval": 1000,
+        "backoffMultiplier": 2
+      }
+    },
+    {
+      "id": "github",
+      "name": "GitHub 服务器",
+      "description": "提供 GitHub API 访问能力",
+      "transport": "stdio",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+        },
+        "timeout": 30000
+      },
+      "autoConnect": true,
+      "reconnect": {
+        "enabled": true,
+        "maxRetries": 3,
+        "interval": 2000,
+        "backoffMultiplier": 1.5
+      }
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL 服务器",
+      "description": "提供 PostgreSQL 数据库访问",
+      "transport": "stdio",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"],
+        "timeout": 30000
+      },
+      "autoConnect": false,
+      "reconnect": {
+        "enabled": true,
+        "maxRetries": 3,
+        "interval": 5000,
+        "backoffMultiplier": 2
+      }
+    },
+    {
+      "id": "fetch",
+      "name": "HTTP Fetch 服务器",
+      "description": "提供 HTTP 请求能力",
+      "transport": "stdio",
+      "connection": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-fetch"],
+        "timeout": 30000
+      },
+      "autoConnect": true,
+      "capabilities": {
+        "tools": ["fetch", "get", "post", "put", "delete"]
+      }
+    },
+    {
+      "id": "remote-api",
+      "name": "远程 HTTP API",
+      "description": "通过 HTTP 连接远程 MCP 服务器",
+      "transport": "http",
+      "connection": {
+        "url": "https://api.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${API_TOKEN}"
+        },
+        "timeout": 30000
+      },
+      "autoConnect": true,
+      "reconnect": {
+        "enabled": true,
+        "maxRetries": 5,
+        "interval": 3000,
+        "backoffMultiplier": 2
+      }
     }
+  ],
+  "globalReconnect": {
+    "enabled": true,
+    "maxRetries": 5,
+    "interval": 1000,
+    "backoffMultiplier": 2
+  },
+  "discovery": {
+    "enabled": true,
+    "scanInterval": 60000,
+    "localPaths": [
+      "~/.config/mcp/servers",
+      "./mcp-servers"
+    ],
+    "registries": [
+      "https://registry.modelcontextprotocol.io/servers"
+    ]
+  },
+  "cache": {
+    "toolsTTL": 300000,
+    "resourcesTTL": 600000
   }
 }

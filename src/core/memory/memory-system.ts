@@ -19,6 +19,12 @@ import type {
 import { MemoryStore } from './memory-store';
 import { EmbeddingService } from './embedding-service';
 import {
+  MemoryImportExport,
+  ExportOptions,
+  ImportOptions,
+  ImportResult,
+} from './memory-import-export';
+import {
   calculateSalience,
   shouldForget,
   shouldConsolidate,
@@ -466,17 +472,81 @@ export class MemorySystem {
   }
 
   /**
-   * 导出所有记忆
-   */
-  exportMemories(): AnyMemory[] {
-    return this.store.getAll();
-  }
-
-  /**
    * 获取原始存储实例 (高级操作)
    */
   getStore(): MemoryStore {
     return this.store;
+  }
+
+  // ============================================================================
+  // 导入导出功能
+  // ============================================================================
+
+  /**
+   * 导出记忆
+   * @param options 导出选项
+   * @returns 导出的内容
+   */
+  exportMemories(options: ExportOptions): string {
+    const memories = this.store.getAll();
+    const importExport = new MemoryImportExport();
+    return importExport.exportMemories(memories, options);
+  }
+
+  /**
+   * 导入记忆
+   * @param content 导入内容
+   * @param options 导入选项
+   * @returns 导入结果
+   */
+  importMemories(content: string, options: ImportOptions): ImportResult {
+    const importExport = new MemoryImportExport();
+    const { memories, result } = importExport.importMemories(content, options);
+
+    // 导入到存储
+    for (const memory of memories) {
+      this.store.save(memory);
+    }
+
+    return result;
+  }
+
+  /**
+   * 按类型筛选记忆
+   * @param type 记忆类型
+   * @returns 该类型的记忆列表
+   */
+  getMemoriesByType(type: MemoryType): AnyMemory[] {
+    return this.store.query({ type });
+  }
+
+  /**
+   * 关键词搜索记忆
+   * @param keywords 关键词列表
+   * @param limit 最大数量
+   * @returns 搜索结果 (AnyMemory[])
+   */
+  searchByKeywords(keywords: string[], limit = 10): AnyMemory[] {
+    const results = this.store.search(keywords, limit);
+    return results.map(r => r.memory);
+  }
+
+  /**
+   * 向量相似度搜索
+   * @param query 查询文本
+   * @param limit 最大数量
+   * @returns 搜索结果 (AnyMemory[])
+   */
+  async searchByVector(query: string, limit = 5): Promise<AnyMemory[]> {
+    if (!this.vectorSearchEnabled || !this.embeddingService.isEnabled()) {
+      logger.warn('向量搜索未启用');
+      return [];
+    }
+
+    const queryVector = await this.embeddingService.generateEmbedding(query);
+    const threshold = getConfig().memory.vectorStore.similarityThreshold;
+    const results = await this.store.semanticSearch(queryVector, limit, threshold);
+    return results.map((r: MemoryRetrievalResult) => r.memory);
   }
 
   // ============================================================================
@@ -623,5 +693,29 @@ export class MemorySystem {
       lowSalience,
       shouldForget,
     };
+  }
+
+  /**
+   * 根据ID获取记忆
+   * @param id 记忆ID
+   * @returns 记忆或undefined
+   */
+  getMemoryById(id: string): AnyMemory | undefined {
+    return this.store.getById(id);
+  }
+
+  /**
+   * 删除记忆
+   * @param id 记忆ID
+   * @returns 是否删除成功
+   */
+  deleteMemory(id: string): boolean {
+    const memory = this.store.getById(id);
+    if (!memory) {
+      return false;
+    }
+    this.store.delete(id);
+    logger.info('记忆已删除', { id });
+    return true;
   }
 }

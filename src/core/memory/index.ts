@@ -9,6 +9,15 @@ export { MemorySystem } from './memory-system';
 export { MemoryStore } from './memory-store';
 export { EmbeddingService, getEmbeddingService } from './embedding-service';
 export {
+  MemoryImportExport,
+  createMemoryImportExport,
+} from './memory-import-export';
+export type {
+  ExportOptions,
+  ImportOptions,
+  ImportResult,
+} from './memory-import-export';
+export {
   calculateRetentionRate,
   calculateSalience,
   shouldForget,
